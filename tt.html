@@ -1411,9 +1411,10 @@ function ttRenderAdminShell(){
       <button class="tt-admin-tab${ttAdminActiveTab==='holidays'?' on':''}" onclick="ttAdminTab('holidays')">🎄 חגים</button>
 <button class="tt-admin-tab${ttAdminActiveTab==='empDash'?' on':''}" onclick="ttAdminTab('empDash')">📊 דשבורד עובדים</button>
     </div>
-    <div class="tt-month-sel">
+    <div class="tt-month-sel" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <span class="tt-month-lbl">חודש:</span>
       <select onchange="ttAdminMonthChange(this.value)">${monthOpts}</select>
+      <button onclick="ttExportPayrollXLSX(ttAdminMonth)" style="margin-right:auto;background:linear-gradient(135deg,#166534,#16a34a);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px">📤 ייצוא דוחות שעות (Excel)</button>
     </div>
     <div id="tt-admin-content"></div>`;
   ttRenderAdminContent();
@@ -1669,6 +1670,136 @@ window.ttDelHoliday=async function(id){
     ttToast("✓ חג נמחק");ttRenderAdminContent();
   }catch(e){ttToast("שגיאה: "+e.message,true);}
 };
+
+// ── PAYROLL XLSX EXPORT ───────────────────────────────────────
+// Generates two Excel files matching "לקוחות פלוס" report format:
+//   1. דוח נוכחות   — one sheet per employee, daily attendance summary
+//   2. דוח שעות מפורט — all work entries by date
+window.ttExportPayrollXLSX=function(month){
+  if(!window.XLSX){
+    ttToast("טוען ספריית Excel…");
+    const s=document.createElement('script');
+    s.src='https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+    s.onerror=()=>ttToast("שגיאה בטעינת ספריית Excel",true);
+    s.onload=()=>_ttDoPayrollExport(month);
+    document.head.appendChild(s);
+    return;
+  }
+  _ttDoPayrollExport(month);
+};
+
+function _ttDoPayrollExport(month){
+  const XL=window.XLSX;
+  const ml=ttMonthLabel(month);
+  const days=ttGetMonthDays(month);
+  const dayAbbr=['א','ב','ג','ד','ה','ו','ש'];
+  const fmtDate=ds=>ds.split('-').reverse().join('/');
+  const fmtH=h=>h>0?+h.toFixed(4):'';
+  const cN=id=>(ttClients.find(c=>c.id===id)?.fields[FC.name])||'';
+  const wN=id=>(ttWorkTypes.find(w=>w.id===id)?.fields[FW.name])||'';
+
+  // ── Book 1: דוח נוכחות ──────────────────────────────────────
+  const wb1=XL.utils.book_new();
+
+  ttAllEmpsData.forEach(emp=>{
+    const name=emp.fields[FE.fullName]||'';
+    const dailyH=emp.fields[FE.dailyHours]||0;
+    const ed=ttAllDays[emp.id]||{};
+
+    const hdrs=['שם עובד','תאריך','יום','שעת כניסה','שעת יציאה',
+                'שעות נוכחות','שעות מדווחות','שעות מצופות','הפרש',
+                'שעות לא מדווחות','הערות'];
+    const rows=[];
+    let totAtt=0,totWork=0;
+
+    // Only Sun-Thu + any holiday that falls on weekday
+    days.forEach(ds=>{
+      const dow=new Date(ds+'T12:00:00').getDay(); // 0=Sun … 6=Sat
+      if(dow===5||dow===6)return; // skip Fri/Sat
+      const holiday=ttHolidays.find(h=>h.date===ds);
+      const d=ed[ds];
+      let arrive='',leave='',attH=0,workH=0;
+
+      if(d){
+        arrive=d.arrive||''; leave=d.leave||'';
+        if(arrive&&leave&&ttV(arrive)&&ttV(leave))
+          attH=Math.max(0,(ttT2m(leave)-ttT2m(arrive))/60);
+        d.entries.forEach(e=>{workH+=e.hours||Math.max(0,(ttT2m(e.end)-ttT2m(e.start))/60);});
+      }
+      totAtt+=attH; totWork+=workH;
+
+      const diff=workH-dailyH;
+      const unrep=attH-workH;
+      rows.push([
+        name, fmtDate(ds), dayAbbr[dow]||'',
+        arrive||'', leave||'',
+        fmtH(attH), fmtH(workH),
+        dailyH||'', +diff.toFixed(4),
+        unrep>0.01?fmtH(unrep):'',
+        holiday?holiday.name:''
+      ]);
+    });
+
+    // blank + totals
+    rows.push([]);
+    rows.push(['','','','','סה"כ',
+               +totAtt.toFixed(2),+totWork.toFixed(2),'','','','']);
+
+    const ws=XL.utils.aoa_to_sheet([hdrs,...rows]);
+    ws['!cols']=[{wch:14},{wch:12},{wch:5},{wch:10},{wch:10},
+                 {wch:12},{wch:12},{wch:12},{wch:10},{wch:14},{wch:20}];
+    ws['!dir']='rtl';
+    XL.utils.book_append_sheet(wb1,ws,name.slice(0,31));
+  });
+
+  XL.writeFile(wb1,`דוח_נוכחות_${ml}.xlsx`);
+
+  // ── Book 2: דוח שעות מפורט ─────────────────────────────────
+  const wb2=XL.utils.book_new();
+  const hdrs2=['תאריך','יום','עובד','לקוח','סוג עבודה',
+               'משעה','עד שעה','שעות','הערות'];
+  const rows2=[];
+  let tot2=0;
+
+  ttAllEmpsData.forEach(emp=>{
+    const name=emp.fields[FE.fullName]||'';
+    const ed=ttAllDays[emp.id]||{};
+    days.forEach(ds=>{
+      const dow=new Date(ds+'T12:00:00').getDay();
+      const d=ed[ds];
+      if(!d||!d.entries.length)return;
+      d.entries.forEach(e=>{
+        const h=e.hours||Math.max(0,(ttT2m(e.end)-ttT2m(e.start))/60);
+        tot2+=h;
+        rows2.push([
+          fmtDate(ds), dayAbbr[dow]||'', name,
+          cN(e.clientId), wN(e.workTypeId),
+          e.start||'', e.end||'',
+          +h.toFixed(4), e.notes||''
+        ]);
+      });
+    });
+  });
+
+  // Sort by date then employee
+  rows2.sort((a,b)=>{
+    const da=a[0].split('/').reverse().join('-');
+    const db=b[0].split('/').reverse().join('-');
+    return da.localeCompare(db)||a[2].localeCompare(b[2]);
+  });
+
+  rows2.push([]);
+  rows2.push(['','','','','','','סה"כ',+tot2.toFixed(2),'']);
+
+  const ws2=XL.utils.aoa_to_sheet([hdrs2,...rows2]);
+  ws2['!cols']=[{wch:12},{wch:5},{wch:14},{wch:30},{wch:28},
+                {wch:8},{wch:8},{wch:8},{wch:28}];
+  ws2['!dir']='rtl';
+  XL.utils.book_append_sheet(wb2,ws2,'שעות מפורט');
+  XL.writeFile(wb2,`דוח_שעות_מפורט_${ml}.xlsx`);
+
+  ttToast('✓ שני דוחות יוצאו בהצלחה — בדוק הורדות');
+}
 
 // ── BOOT ──────────────────────────────────────────────────────
 ttLoadEmps();
