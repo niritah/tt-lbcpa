@@ -153,14 +153,14 @@
 <!-- HEADER -->
 <div id="header">
   <div id="header-right">
-    <div id="logo-badge" onclick="window.location.href='/'" title="חזרה לאפליקציה">LB</div>
+    <div id="logo-badge" onclick="location.reload()" title="רענן">LB</div>
     <div>
       <div id="header-title">⏱ דיווח שעות</div>
       <div id="header-subtitle">בן אבי רואה חשבון</div>
     </div>
   </div>
   <div id="header-left">
-    <a href="/" id="back-to-app">← חזרה לאפליקציה</a>
+    <a href="javascript:void(0)" id="back-to-app" onclick="if(typeof ttLogout==='function')ttLogout();else location.reload()">↩ יציאה</a>
   </div>
 </div>
 
@@ -667,21 +667,27 @@ async function ttLoadEmps(){
     // Fade out splash
     const splash=document.getElementById("tt-splash");
     if(splash){splash.classList.add("fade-out");setTimeout(()=>splash.remove(),400);}
-    // Auto-login: match logged-in user by name from the main-app OTP session
-    const norm=s=>String(s||"").replace(/\s+/g," ").trim();
-    const mainName=localStorage.getItem('lbcpa_name')||sessionStorage.getItem('lbcpa_name')||localStorage.getItem('lbcpa_user')||sessionStorage.getItem('lbcpa_user');
-    if(mainName){
-      const target=norm(mainName);const parts=target.split(" ").filter(Boolean);
-      let match=ttEmps.find(e=>norm(e.fields[FE.fullName])===target);
-      if(!match&&parts.length)match=ttEmps.find(e=>norm(e.fields[FE.fullName])===parts[0]);
-      if(!match&&parts.length)match=ttEmps.find(e=>parts.every(p=>norm(e.fields[FE.fullName]).includes(p)));
-      if(!match&&parts.length)match=ttEmps.find(e=>norm(e.fields[FE.fullName]).split(" ")[0]===parts[0]);
-      if(match){
-        ttSelEmp=match;ttCurEmp=match;
-        ttRoot().innerHTML=`<div class="tt-loader"><span class="tt-sp" style="width:20px;height:20px;border-width:3px"></span><span>טוען נתונים...</span></div>`;
-        ttLoadData();
-        return;
+    // Auto-login: match logged-in user by record ID from stored JWT, then name fallback
+    const storedToken=localStorage.getItem('lbcpa_token');
+    let jwtEmpId=null;
+    if(storedToken){try{const pl=JSON.parse(atob(storedToken.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));jwtEmpId=pl.empId||null;}catch(e){}}
+    let match=jwtEmpId?ttEmps.find(e=>e.id===jwtEmpId):null;
+    if(!match){
+      const norm=s=>String(s||"").replace(/\s+/g," ").trim();
+      const mainName=localStorage.getItem('lbcpa_name')||sessionStorage.getItem('lbcpa_name')||localStorage.getItem('lbcpa_user')||sessionStorage.getItem('lbcpa_user');
+      if(mainName){
+        const target=norm(mainName);const parts=target.split(" ").filter(Boolean);
+        match=ttEmps.find(e=>norm(e.fields[FE.fullName])===target);
+        if(!match&&parts.length)match=ttEmps.find(e=>norm(e.fields[FE.fullName])===parts[0]);
+        if(!match&&parts.length)match=ttEmps.find(e=>parts.every(p=>norm(e.fields[FE.fullName]).includes(p)));
+        if(!match&&parts.length)match=ttEmps.find(e=>norm(e.fields[FE.fullName]).split(" ")[0]===parts[0]);
       }
+    }
+    if(match){
+      ttSelEmp=match;ttCurEmp=match;
+      ttRoot().innerHTML=`<div class="tt-loader"><span class="tt-sp" style="width:20px;height:20px;border-width:3px"></span><span>טוען נתונים...</span></div>`;
+      ttLoadData();
+      return;
     }
     ttRenderLogin();
   }catch(e){
@@ -793,14 +799,19 @@ function ttFinishLogin(data){
   const ttlMs=data.expiresIn?data.expiresIn*1000:14*24*60*60*1000;
   localStorage.setItem("lbcpa_auth_expires",String(Date.now()+ttlMs));
   // Match employee in already-loaded list and load their data
-  const norm=s=>String(s||"").replace(/\s+/g," ").trim();
-  const target=norm(data.name);const parts=target.split(" ").filter(Boolean);
-  let match=ttEmps.find(e=>norm(e.fields[FE.fullName])===target);
-  if(!match&&parts.length)match=ttEmps.find(e=>norm(e.fields[FE.fullName])===parts[0]);
-  if(!match&&parts.length)match=ttEmps.find(e=>parts.every(p=>norm(e.fields[FE.fullName]).includes(p)));
-  if(!match&&parts.length)match=ttEmps.find(e=>norm(e.fields[FE.fullName]).split(" ")[0]===parts[0]);
+  // Primary: match by Airtable record ID (empId in JWT) — most reliable
+  let match=data.empId?ttEmps.find(e=>e.id===data.empId):null;
   if(!match){
-    const perr=document.getElementById("tt-perr");if(perr)perr.textContent="המשתמש לא נמצא ברשימת העובדים הפעילים";
+    // Fallback: name matching
+    const norm=s=>String(s||"").replace(/\s+/g," ").trim();
+    const target=norm(data.name);const parts=target.split(" ").filter(Boolean);
+    match=ttEmps.find(e=>norm(e.fields[FE.fullName])===target);
+    if(!match&&parts.length)match=ttEmps.find(e=>norm(e.fields[FE.fullName])===parts[0]);
+    if(!match&&parts.length)match=ttEmps.find(e=>parts.every(p=>norm(e.fields[FE.fullName]).includes(p)));
+    if(!match&&parts.length)match=ttEmps.find(e=>norm(e.fields[FE.fullName]).split(" ")[0]===parts[0]);
+  }
+  if(!match){
+    const perr=document.getElementById("tt-perr");if(perr)perr.textContent="המשתמש לא נמצא ברשימת העובדים הפעילים — פנה למנהל";
     return;
   }
   ttSelEmp=match;ttCurEmp=match;
