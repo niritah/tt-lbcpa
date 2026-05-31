@@ -704,9 +704,35 @@ async function ttLoadEmps(){
 
 // ── SESSION EXPIRY HANDLER ────────────────────────────────────
 function ttHandleExpiredSession(){
-  // Clear all auth state and return to login screen
-  ['lbcpa_auth','lbcpa_token','lbcpa_device_token','lbcpa_auth_expires','lbcpa_name','lbcpa_user','lbcpa_emp_id'].forEach(k=>localStorage.removeItem(k));
+  // Clear session tokens (but keep saved credentials and device token for silent re-auth)
+  ['lbcpa_auth','lbcpa_token','lbcpa_auth_expires'].forEach(k=>localStorage.removeItem(k));
+  // If "remember me" is on — silently re-authenticate without showing login
+  const savedEmail=localStorage.getItem('lbcpa_saved_email');
+  const savedPass=localStorage.getItem('lbcpa_saved_pass');
+  if(localStorage.getItem('lbcpa_remember')==='1'&&savedEmail&&savedPass){
+    ttSilentReauth(savedEmail,savedPass);
+    return;
+  }
+  // No remember-me — full clear and show login
+  ['lbcpa_device_token','lbcpa_name','lbcpa_user','lbcpa_emp_id'].forEach(k=>localStorage.removeItem(k));
   ttRenderLogin();
+}
+
+async function ttSilentReauth(email,pass){
+  try{
+    const deviceToken=localStorage.getItem('lbcpa_device_token')||null;
+    const body={email,password:pass,rememberMe:true};
+    if(deviceToken)body.deviceToken=deviceToken;
+    const res=await fetch(`${AUTH_BASE}/auth-login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'auth failed');
+    if(data.skipOtp){ttFinishLogin(data);return;}
+    // Device token expired — OTP required once; show pre-filled login
+    if(deviceToken)localStorage.removeItem('lbcpa_device_token');
+    ttRenderLogin();// login form will auto-fill saved creds
+  }catch(e){
+    ttRenderLogin();
+  }
 }
 
 // ── OTP LOGIN (Electron desktop) ───────────────────────────────
@@ -729,6 +755,10 @@ function ttRenderLogin(){
           <input class="tt-srch" type="password" id="tt-otp-pass" placeholder="••••••••" autocomplete="current-password" style="margin:0"/>
         </div>
         <div class="tt-perr" id="tt-perr" style="margin-top:8px"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:10px;margin-bottom:2px">
+          <input type="checkbox" id="tt-remember" style="width:15px;height:15px;accent-color:var(--blue);cursor:pointer;flex-shrink:0"/>
+          <label for="tt-remember" style="font-size:12px;color:var(--muted);cursor:pointer;user-select:none">זכור אותי — הישאר מחובר</label>
+        </div>
         <button class="tt-lbtn" id="tt-otp-submit" onclick="ttSubmitCreds()">כניסה ←</button>
       </div>
       <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
@@ -736,7 +766,20 @@ function ttRenderLogin(){
       </div>
     </div>
   </div>`;
-  setTimeout(()=>{const p=document.getElementById("tt-otp-email");if(p)p.focus();},80);
+  setTimeout(()=>{
+    // Pre-fill saved credentials
+    const savedEmail=localStorage.getItem('lbcpa_saved_email');
+    const savedPass=localStorage.getItem('lbcpa_saved_pass');
+    const isRemember=localStorage.getItem('lbcpa_remember')==='1';
+    const em=document.getElementById('tt-otp-email');
+    const pa=document.getElementById('tt-otp-pass');
+    const cb=document.getElementById('tt-remember');
+    if(em&&savedEmail)em.value=savedEmail;
+    if(pa&&savedPass&&isRemember)pa.value=savedPass;
+    if(cb)cb.checked=isRemember;
+    // Focus: skip to password if email already filled
+    if(savedEmail&&em){(pa||em).focus();}else if(em){em.focus();}
+  },80);
   setTimeout(()=>{
     const e=document.getElementById("tt-otp-email"),p=document.getElementById("tt-otp-pass");
     if(e)e.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();(p||{}).focus?.();}});
@@ -747,12 +790,21 @@ function ttRenderLogin(){
 window.ttSubmitCreds=async function(){
   const email=(document.getElementById("tt-otp-email")?.value||"").trim().toLowerCase();
   const password=document.getElementById("tt-otp-pass")?.value||"";
+  const remember=document.getElementById("tt-remember")?.checked||false;
   const perr=document.getElementById("tt-perr");
   if(!email||!password){if(perr)perr.textContent="יש למלא מייל וסיסמה";return;}
+  // Save or clear credentials based on checkbox
+  if(remember){
+    localStorage.setItem('lbcpa_remember','1');
+    localStorage.setItem('lbcpa_saved_email',email);
+    localStorage.setItem('lbcpa_saved_pass',password);
+  }else{
+    ['lbcpa_remember','lbcpa_saved_email','lbcpa_saved_pass'].forEach(k=>localStorage.removeItem(k));
+  }
   const btn=document.getElementById("tt-otp-submit");if(btn){btn.disabled=true;btn.textContent="שולח...";}
   try{
     const deviceToken=localStorage.getItem("lbcpa_device_token")||null;
-    const body={email,password};if(deviceToken)body.deviceToken=deviceToken;
+    const body={email,password,rememberMe:remember};if(deviceToken)body.deviceToken=deviceToken;
     const res=await fetch(`${AUTH_BASE}/auth-login`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
     const data=await res.json();
     if(!res.ok){if(perr)perr.textContent=data.error||"שגיאה";return;}
@@ -788,7 +840,8 @@ window.ttSubmitOtp=async function(){
   if(otp.length!==6){if(perr)perr.textContent="יש להזין קוד בן 6 ספרות";return;}
   const btn=document.getElementById("tt-otp-submit");if(btn){btn.disabled=true;btn.textContent="מאמת...";}
   try{
-    const res=await fetch(`${AUTH_BASE}/auth-verify`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:_ttOtpEmail,otp,trust:true})});
+    const rememberMe=localStorage.getItem('lbcpa_remember')==='1';
+    const res=await fetch(`${AUTH_BASE}/auth-verify`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:_ttOtpEmail,otp,trust:true,rememberMe})});
     const data=await res.json();
     if(!res.ok){if(perr)perr.textContent=data.error||"קוד שגוי";return;}
     ttFinishLogin(data);
@@ -913,7 +966,10 @@ window.ttLogout=function(){
   ttStopReminderEngine();
   ttCurEmp=null;ttSelEmp=null;ttSelDate=ttToday();
   ttTimeVals={arrive:"",leave:"",start:"",end:""};ttStopTimer();
-  ['lbcpa_auth','lbcpa_token','lbcpa_device_token','lbcpa_auth_expires','lbcpa_name','lbcpa_user','lbcpa_emp_id'].forEach(k=>localStorage.removeItem(k));
+  // Full clear including saved credentials — user explicitly logged out
+  ['lbcpa_auth','lbcpa_token','lbcpa_device_token','lbcpa_auth_expires',
+   'lbcpa_name','lbcpa_user','lbcpa_emp_id',
+   'lbcpa_remember','lbcpa_saved_email','lbcpa_saved_pass'].forEach(k=>localStorage.removeItem(k));
   ttRenderLogin();
 };
 
