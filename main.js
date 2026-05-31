@@ -86,7 +86,6 @@ function setupAutoUpdater() {
 
   autoUpdater.on('update-downloaded', () => {
     if (tray) tray.setToolTip('דיווח שעות — עדכון מוכן להתקנה');
-    // Rebuild tray to show update option
     createTray();
     dialog.showMessageBox({
       type: 'info',
@@ -98,7 +97,11 @@ function setupAutoUpdater() {
       cancelId: 1
     }).then(({ response }) => {
       if (response === 0) {
-        autoUpdater.quitAndInstall(false, true);
+        // Close window and destroy tray BEFORE installer runs
+        if (win) { win.removeAllListeners('close'); win.destroy(); win = null; }
+        if (tray) { tray.destroy(); tray = null; }
+        // isSilent=true → no NSIS GUI → no "cannot be closed" dialog
+        autoUpdater.quitAndInstall(true, true);
       }
     });
   });
