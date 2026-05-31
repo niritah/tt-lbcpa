@@ -39,7 +39,8 @@
       "createStartMenuShortcut": true,
       "installerIcon": "icon.ico",
       "uninstallerIcon": "icon.ico",
-      "shortcutName": "דיווח שעות"
+      "shortcutName": "דיווח שעות",
+      "artifactName": "tt-lbcpa-setup-${version}.${ext}"
     },
     "files": [
       "main.js",
