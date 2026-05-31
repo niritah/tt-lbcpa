@@ -613,7 +613,7 @@ async function ttGet(table,filter,fieldIds){
         resp=await fetch(PROXY_URL,{method:'POST',headers:_hdrs,body:JSON.stringify({action:'get',table,filter:filter||'',fields:fieldIds||[],offset})});
         if(resp.ok)break;
         if(resp.status>=500||resp.status===429){lastErr=new Error('Airtable error '+resp.status);await new Promise(r=>setTimeout(r,400*(attempt+1)));continue;}
-        if(resp.status===401){ttHandleExpiredSession();return[];}
+        if(resp.status===401){ttHandleExpiredSession();const _e401=new Error('401');_e401.isSessionExpired=true;throw _e401;}
         throw new Error('Airtable error '+resp.status);
       }catch(e){lastErr=e;if(attempt<2){await new Promise(r=>setTimeout(r,400*(attempt+1)));continue;}throw e;}
     }
@@ -661,6 +661,11 @@ window.ttMaskAdminPass=function(el){
 // ── LOGIN ─────────────────────────────────────────────────────
 async function ttLoadEmps(){
   ttRoot().innerHTML=`<div class="tt-loader"><span class="tt-sp" style="width:20px;height:20px;border-width:3px"></span><span>טוען עובדים...</span></div>`;
+  // Check auth token BEFORE making any API calls — avoids race condition with ttHandleExpiredSession
+  if(!localStorage.getItem('lbcpa_token')){
+    ttHandleExpiredSession();
+    return;
+  }
   try{
     const[recs,holRecs]=await Promise.all([
       ttGet(TABLES.employees,"",[FE.fullName,FE.status,FE.hideFromTT,FE.dailyHours,FE.role]),
@@ -696,17 +701,21 @@ async function ttLoadEmps(){
     }
     ttRenderLogin();
   }catch(e){
+    if(e.isSessionExpired)return; // ttHandleExpiredSession already called — let it take over
     const splash=document.getElementById("tt-splash");if(splash)splash.remove();
-    if(e.message&&e.message.includes('401')){ttRenderLogin();return;}
+    if(e.message&&e.message.includes('401')){ttHandleExpiredSession();return;}
     ttRoot().innerHTML=`<div class="tt-loader" style="color:#fca5a5">שגיאה: ${e.message}</div>`;
   }
 }
 
 // ── SESSION EXPIRY HANDLER ────────────────────────────────────
+let _ttSessionHandling=false;
 function ttHandleExpiredSession(){
-  // Clear session tokens (but keep saved credentials and device token for silent re-auth)
+  if(_ttSessionHandling)return; // prevent duplicate calls from parallel ttGet requests
+  _ttSessionHandling=true;
+  setTimeout(()=>{_ttSessionHandling=false;},8000);
+  // Clear session tokens (keep credentials and device token for silent re-auth)
   ['lbcpa_auth','lbcpa_token','lbcpa_auth_expires'].forEach(k=>localStorage.removeItem(k));
-  // If "remember me" is on — silently re-authenticate without showing login
   const savedEmail=localStorage.getItem('lbcpa_saved_email');
   const savedPass=localStorage.getItem('lbcpa_saved_pass');
   if(localStorage.getItem('lbcpa_remember')==='1'&&savedEmail&&savedPass){
@@ -922,9 +931,18 @@ async function ttLoadData(){
 
 // ── MAIN SHELL ────────────────────────────────────────────────
 function ttIsManager(){
+  // Primary: check JWT role (set by auth-verify: "Admin" / "User")
+  try{
+    const tok=localStorage.getItem('lbcpa_token');
+    if(tok){
+      const pl=JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+      if(pl.role==='Admin'||pl.role==='מנהל')return true;
+    }
+  }catch{}
+  // Fallback: check Airtable record field
   const r=ttCurEmp?.fields?.[FE.role];
-  const roleName=r&&typeof r==="object"?r.name:r;
-  return roleName==="מנהל";
+  const roleName=r&&typeof r==='object'?r.name:r;
+  return roleName==='מנהל'||roleName==='Admin';
 }
 function ttRenderMain(){
   const name=ttCurEmp.fields[FE.fullName]||"";
@@ -1452,7 +1470,7 @@ async function ttOpenAdminDashboard(){
   }catch(e){document.querySelector(".tt-admin-body").innerHTML=`<div class="tt-alert err" style="margin:16px">שגיאה: ${e.message}</div>`;}
 }
 
-window.ttCloseAdmin=function(){document.getElementById("tt-admin-overlay")?.remove();ttRenderLogin();};
+window.ttCloseAdmin=function(){document.getElementById("tt-admin-overlay")?.remove();ttRenderMain();};
 
 function ttRenderAdminShell(){
   const ov=document.getElementById("tt-admin-overlay");if(!ov)return;
