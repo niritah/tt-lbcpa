@@ -608,7 +608,9 @@ async function ttGet(table,filter,fieldIds){
     let resp, lastErr;
     for(let attempt=0; attempt<3; attempt++){
       try{
-        resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'get',table,filter:filter||'',fields:fieldIds||[],offset})});
+        const _tok=localStorage.getItem('lbcpa_token');
+        const _hdrs={'Content-Type':'application/json'};if(_tok)_hdrs['Authorization']='Bearer '+_tok;
+        resp=await fetch(PROXY_URL,{method:'POST',headers:_hdrs,body:JSON.stringify({action:'get',table,filter:filter||'',fields:fieldIds||[],offset})});
         if(resp.ok)break;
         if(resp.status>=500||resp.status===429){lastErr=new Error('Airtable error '+resp.status);await new Promise(r=>setTimeout(r,400*(attempt+1)));continue;}
         if(resp.status===401){ttHandleExpiredSession();return[];}
@@ -623,17 +625,20 @@ async function ttGet(table,filter,fieldIds){
   return all;
 }
 async function ttPost(table,fields){
-  const resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'post',table,data:fields})});
+  const _tok=localStorage.getItem('lbcpa_token');const _hdrs={'Content-Type':'application/json'};if(_tok)_hdrs['Authorization']='Bearer '+_tok;
+  const resp=await fetch(PROXY_URL,{method:'POST',headers:_hdrs,body:JSON.stringify({action:'post',table,data:fields})});
   if(!resp.ok)throw new Error('Airtable error '+resp.status);
   const j=await resp.json();if(j.error)throw new Error(j.error);return j;
 }
 async function ttPatch(table,id,fields){
-  const resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'patch',table,id,data:fields})});
+  const _tok=localStorage.getItem('lbcpa_token');const _hdrs={'Content-Type':'application/json'};if(_tok)_hdrs['Authorization']='Bearer '+_tok;
+  const resp=await fetch(PROXY_URL,{method:'POST',headers:_hdrs,body:JSON.stringify({action:'patch',table,id,data:fields})});
   if(!resp.ok)throw new Error('Airtable error '+resp.status);
   const j=await resp.json();if(j.error)throw new Error(j.error);return j;
 }
 async function ttDel(table,id){
-  const resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',table,id})});
+  const _tok=localStorage.getItem('lbcpa_token');const _hdrs={'Content-Type':'application/json'};if(_tok)_hdrs['Authorization']='Bearer '+_tok;
+  const resp=await fetch(PROXY_URL,{method:'POST',headers:_hdrs,body:JSON.stringify({action:'delete',table,id})});
   if(!resp.ok)throw new Error('Airtable error '+resp.status);
   const j=await resp.json();if(j.error)throw new Error(j.error);return j;
 }
@@ -667,10 +672,10 @@ async function ttLoadEmps(){
     // Fade out splash
     const splash=document.getElementById("tt-splash");
     if(splash){splash.classList.add("fade-out");setTimeout(()=>splash.remove(),400);}
-    // Auto-login: match logged-in user by record ID from stored JWT, then name fallback
-    const storedToken=localStorage.getItem('lbcpa_token');
-    let jwtEmpId=null;
-    if(storedToken){try{const pl=JSON.parse(atob(storedToken.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));jwtEmpId=pl.empId||null;}catch(e){}}
+    // Auto-login: match logged-in user by record ID, then name fallback
+    // Try empId from localStorage (set by ttFinishLogin) or from stored JWT
+    let jwtEmpId=localStorage.getItem('lbcpa_emp_id')||null;
+    if(!jwtEmpId){const storedToken=localStorage.getItem('lbcpa_token');if(storedToken){try{const pl=JSON.parse(atob(storedToken.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));jwtEmpId=pl.empId||null;}catch(e){}}}
     let match=jwtEmpId?ttEmps.find(e=>e.id===jwtEmpId):null;
     if(!match){
       const norm=s=>String(s||"").replace(/\s+/g," ").trim();
@@ -700,7 +705,7 @@ async function ttLoadEmps(){
 // ── SESSION EXPIRY HANDLER ────────────────────────────────────
 function ttHandleExpiredSession(){
   // Clear all auth state and return to login screen
-  ['lbcpa_auth','lbcpa_token','lbcpa_device_token','lbcpa_auth_expires','lbcpa_name','lbcpa_user'].forEach(k=>localStorage.removeItem(k));
+  ['lbcpa_auth','lbcpa_token','lbcpa_device_token','lbcpa_auth_expires','lbcpa_name','lbcpa_user','lbcpa_emp_id'].forEach(k=>localStorage.removeItem(k));
   ttRenderLogin();
 }
 
@@ -796,27 +801,12 @@ function ttFinishLogin(data){
   localStorage.setItem("lbcpa_name",data.name||"");
   if(data.token)localStorage.setItem("lbcpa_token",data.token);
   if(data.deviceToken)localStorage.setItem("lbcpa_device_token",data.deviceToken);
+  if(data.empId)localStorage.setItem("lbcpa_emp_id",data.empId);
   const ttlMs=data.expiresIn?data.expiresIn*1000:14*24*60*60*1000;
   localStorage.setItem("lbcpa_auth_expires",String(Date.now()+ttlMs));
-  // Match employee in already-loaded list and load their data
-  // Primary: match by Airtable record ID (empId in JWT) — most reliable
-  let match=data.empId?ttEmps.find(e=>e.id===data.empId):null;
-  if(!match){
-    // Fallback: name matching
-    const norm=s=>String(s||"").replace(/\s+/g," ").trim();
-    const target=norm(data.name);const parts=target.split(" ").filter(Boolean);
-    match=ttEmps.find(e=>norm(e.fields[FE.fullName])===target);
-    if(!match&&parts.length)match=ttEmps.find(e=>norm(e.fields[FE.fullName])===parts[0]);
-    if(!match&&parts.length)match=ttEmps.find(e=>parts.every(p=>norm(e.fields[FE.fullName]).includes(p)));
-    if(!match&&parts.length)match=ttEmps.find(e=>norm(e.fields[FE.fullName]).split(" ")[0]===parts[0]);
-  }
-  if(!match){
-    const perr=document.getElementById("tt-perr");if(perr)perr.textContent="המשתמש לא נמצא ברשימת העובדים הפעילים — פנה למנהל";
-    return;
-  }
-  ttSelEmp=match;ttCurEmp=match;
-  ttRoot().innerHTML=`<div class="tt-loader"><span class="tt-sp" style="width:20px;height:20px;border-width:3px"></span><span>טוען נתונים...</span></div>`;
-  ttLoadData();
+  // Re-fetch employees (now with valid JWT) — the initial load failed without auth.
+  // ttLoadEmps will auto-login using empId from localStorage.
+  ttLoadEmps();
 }
 
 window.ttOpenAdminLogin=function(){
@@ -922,7 +912,9 @@ window.ttSwitchTab=function(tab,btn){
 window.ttLogout=function(){
   ttStopReminderEngine();
   ttCurEmp=null;ttSelEmp=null;ttSelDate=ttToday();
-  ttTimeVals={arrive:"",leave:"",start:"",end:""};ttStopTimer();ttRenderLogin();
+  ttTimeVals={arrive:"",leave:"",start:"",end:""};ttStopTimer();
+  ['lbcpa_auth','lbcpa_token','lbcpa_device_token','lbcpa_auth_expires','lbcpa_name','lbcpa_user','lbcpa_emp_id'].forEach(k=>localStorage.removeItem(k));
+  ttRenderLogin();
 };
 
 // ── SETTINGS MODAL ───────────────────────────────────────────
