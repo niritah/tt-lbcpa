@@ -1,0 +1,54 @@
+{
+  "name": "tt-lbcpa",
+  "version": "1.3.0",
+  "description": "דיווח שעות - לירן בן אבי רו\"ח",
+  "main": "main.js",
+  "author": "Liran Ben Avi CPA",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --publish=always",
+    "build:local": "electron-builder --win --publish=never",
+    "dist": "electron-builder --win --publish=always"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "co.il.lbcpa.tt",
+    "productName": "דיווח שעות",
+    "copyright": "© 2025 Liran Ben Avi CPA",
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "shortcutName": "דיווח שעות"
+    },
+    "files": [
+      "main.js",
+      "tt.html",
+      "tt.js",
+      "icon.ico",
+      "icon.png"
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "niritah",
+      "repo": "tt-lbcpa",
+      "private": true,
+      "releaseType": "release"
+    }
+  }
+}

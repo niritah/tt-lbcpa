@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>דיווח שעות — בן אבי רואה חשבון</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      min-height: 100vh;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      direction: rtl;
+      background: linear-gradient(160deg, #0f172a 0%, #1e3a8a 45%, #2563eb 100%);
+    }
+
+    /* ── HEADER BAR ── */
+    #header {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: rgba(10, 18, 42, 0.95);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      height: 48px;
+    }
+    #header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #logo-badge {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #B8860B, #D4A017, #F0C040);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 900; color: #0a1520;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+      flex-shrink: 0;
+    }
+    #logo-badge:hover {
+      transform: scale(1.08);
+      box-shadow: 0 2px 10px rgba(212,160,23,0.5);
+    }
+    #header-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      line-height: 1.2;
+    }
+    #header-subtitle {
+      font-size: 10px;
+      color: rgba(255,255,255,0.45);
+      font-weight: 400;
+    }
+    #header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #back-to-app {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.7);
+      font-size: 11px;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      text-decoration: none;
+      transition: all .15s;
+    }
+    #back-to-app:hover {
+      background: rgba(255,255,255,0.14);
+      color: #fff;
+      border-color: rgba(255,255,255,0.3);
+    }
+
+    /* ── SIDEBAR (hidden on this standalone page — tabs replaced by header) ── */
+    #tabbar { display: none !important; }
+
+    /* ── MAIN CONTENT ── */
+    #app {
+      min-height: calc(100vh - 48px);
+    }
+    #tt-root {
+      min-height: calc(100vh - 48px);
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+    /* ── LOADING SPLASH ── */
+    #tt-splash {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(160deg, #0f172a 0%, #1e3a8a 45%, #2563eb 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      gap: 16px;
+      transition: opacity .4s ease;
+    }
+    #tt-splash.fade-out { opacity: 0; pointer-events: none; }
+    .splash-logo {
+      width: 64px; height: 64px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #B8860B, #D4A017, #F0C040);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; font-weight: 900; color: #0a1520;
+      box-shadow: 0 8px 32px rgba(212,160,23,0.4);
+    }
+    .splash-title { font-size: 20px; font-weight: 800; color: #fff; }
+    .splash-sub { font-size: 13px; color: rgba(255,255,255,0.55); }
+    .splash-spinner {
+      width: 28px; height: 28px;
+      border: 3px solid rgba(255,255,255,0.15);
+      border-top-color: #93c5fd;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── MOBILE SAFE AREA ── */
+    @media (max-width: 767px) {
+      #header { padding: 0 12px; }
+      #header-title { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="tt-splash">
+  <div class="splash-logo">LB</div>
+  <div class="splash-title">דיווח שעות</div>
+  <div class="splash-sub">בן אבי רואה חשבון</div>
+  <div class="splash-spinner"></div>
+</div>
+
+<!-- HEADER -->
+<div id="header">
+  <div id="header-right">
+    <div id="logo-badge" onclick="window.location.href='/'" title="חזרה לאפליקציה">LB</div>
+    <div>
+      <div id="header-title">⏱ דיווח שעות</div>
+      <div id="header-subtitle">בן אבי רואה חשבון</div>
+    </div>
+  </div>
+  <div id="header-left">
+    <a href="/" id="back-to-app">← חזרה לאפליקציה</a>
+  </div>
+</div>
+
+<!-- DUMMY ELEMENTS so the TT module doesn't crash looking for them -->
+<div id="tabbar" style="display:none"></div>
+<div id="login-screen" style="display:none"></div>
+
+<!-- MAIN APP AREA -->
+<div id="app">
+  <div id="tt-root"></div>
+</div>
+
+<!-- TT MODULE v8 -->
+<script>
+// ═══════════════ TIME TRACKER MODULE v8 ═══════════════
+// Admin dashboard | Client lock | Retroactive lock
+(function(){
+
+// ── ADMIN CONFIG ─────────────────────────────────────────
+const ADMIN_PASS = "lb2024"; // שנה לסיסמה שלך
+
+// ── GLOBAL APP STYLES (sidebar + bg) ─────────────────────
+const _g=document.createElement('style');
+_g.textContent=`
+  body {
+    background: linear-gradient(160deg,#0f172a 0%,#1e3a8a 45%,#2563eb 100%) !important;
+    min-height:100vh;
+  }
+  .screen, #app, #login-screen { background:transparent !important; }
+  .chat-msgs { background:rgba(15,23,42,0.55) !important; }
+  .chat-input { background:rgba(15,23,42,0.7) !important; }
+  .msg-ai { background:rgba(15,23,42,0.8) !important; border-color:rgba(255,255,255,0.1) !important; color:#e8eaf0 !important; }
+  .msg-user { background:rgba(30,64,175,0.6) !important; color:#fff !important; }
+`;
+document.head.appendChild(_g);
+
+// ── TT-SPECIFIC STYLES ────────────────────────────────────
+const _s=document.createElement('style');
+_s.textContent=`
+  :root {
+    --blue:#1E40AF; --blue-light:#3B82F6; --blue-pale:#EFF6FF; --blue-border:#DBEAFE;
+    --dark:#0F172A; --text:#1E293B; --muted:#475569; --subtle:#64748B;
+    --border:#E2E8F0; --surface:#F8FAFC; --white:#FFFFFF;
+    --red:#DC2626; --red-bg:#FEF2F2; --red-border:#FECACA;
+    --yellow:#D97706; --yellow-bg:#FFFBEB; --yellow-border:#FDE68A;
+    --green:#16A34A; --green-bg:#F0FDF4; --green-border:#BBF7D0;
+    --orange:#EA580C; --orange-bg:#FFF7ED; --orange-border:#FED7AA;
+  }
+  #screen-tt { background:transparent !important; }
+  .tt-bar{background:rgba(255,255,255,0.95);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:48px;z-index:10;backdrop-filter:blur(10px);}
+  .tt-bar-title{font-size:18px;font-weight:800;color:var(--blue);}
+  .tt-bar-r{display:flex;align-items:center;gap:8px;}
+  .tt-av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-light));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;}
+  .tt-nm{font-size:12px;font-weight:600;color:var(--text);}
+  .tt-xbtn{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit;}
+  .tt-xbtn:hover{border-color:var(--blue-light);color:var(--blue);}
+  .tt-admin-btn{background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;color:#fff;font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:700;}
+  .tt-admin-btn:hover{background:linear-gradient(135deg,#6d28d9,#5b21b6);}
+  .tt{max-width:640px;margin:0 auto;padding:6px 12px 20px;direction:rtl;font-family:'Segoe UI',Arial,sans-serif;}
+  .tt-tabs{display:flex;gap:4px;margin-bottom:8px;}
+  .tt-tab{flex:1;padding:6px;border-radius:9px;border:1px solid var(--border);background:#fff;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;}
+  .tt-tab.on{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 2px 8px rgba(30,64,175,.25);}
+  .tt-dbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+  .tt-dlbl{font-size:13px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;gap:5px;text-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .tt-dlbl:hover{color:#93c5fd;}
+  .tt-today{font-size:10px;color:#fff;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);padding:1px 6px;border-radius:5px;font-weight:700;}
+  .tt-nav{display:flex;gap:4px;}
+  .tt-nav button{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+  .tt-nav button:hover{background:rgba(255,255,255,.25);}
+  .tt-nav button:disabled{opacity:.3;cursor:not-allowed;}
+  .tt-card{background:rgba(255,255,255,0.95);border:1px solid rgba(255,255,255,.5);border-radius:14px;padding:8px 12px;margin-bottom:6px;box-shadow:0 2px 8px rgba(0,0,0,.08);backdrop-filter:blur(8px);}
+  .tt-att{background:rgba(255,255,255,0.88);border:1px solid rgba(255,255,255,0.6);border-radius:14px;padding:8px 12px;margin-bottom:6px;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+  .tt-att-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+  .tt-att-title{font-size:14px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.7px;}
+  .tt-att-sum{font-size:13px;font-weight:800;color:var(--text);}
+  .tt-att-sum span{color:var(--blue);}
+  .tt-att-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .tt-afield label{display:block;font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+  .tt-tbox{width:100%;background:#fff;border:2px solid #BFDBFE;color:#1e40af;padding:6px 10px;border-radius:8px;font-size:16px;font-weight:800;font-family:'Segoe UI',Arial,sans-serif;text-align:center;letter-spacing:3px;direction:ltr;box-shadow:0 1px 4px rgba(30,64,175,0.08);}
+  .tt-tbox:focus{outline:none;border-color:var(--blue-light);box-shadow:0 0 0 3px rgba(59,130,246,0.15);}
+  .tt-tbox.set{border-color:var(--blue-light);background:#EFF6FF;color:var(--blue);}
+  .tt-tbox::placeholder{color:#94A3B8;font-size:14px;font-weight:400;letter-spacing:1px;}
+  .tt-tbox:disabled{opacity:0.45;cursor:not-allowed;background:#f1f5f9;}
+  .tt-dbl{font-size:11px;color:#64748b;text-align:center;margin-top:3px;}
+  .tt-alert{display:flex;align-items:center;gap:8px;border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;font-weight:600;flex-wrap:wrap;}
+  .tt-alert.warn{background:var(--yellow-bg);border:1px solid var(--yellow-border);color:var(--yellow);}
+  .tt-alert.ok{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);}
+  .tt-alert.err{background:var(--red-bg);border:1px solid var(--red-border);color:var(--red);}
+  .tt-alert.info{background:var(--blue-pale);border:1px solid var(--blue-border);color:var(--blue);}
+  .tt-form{background:rgba(255,255,255,0.88);border:1px solid rgba(255,255,255,0.6);border-radius:14px;padding:8px 12px;margin-bottom:6px;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+  .tt-ftitle{font-size:12px;font-weight:700;color:#1e40af;margin-bottom:6px;}
+  .tt-r2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;}
+  .tt-fg{margin-bottom:6px;}
+  .tt-fl{display:block;font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+  .tt-fi{width:100%;background:#fff;border:1.5px solid #E2E8F0;color:#1E293B;padding:6px 10px;border-radius:8px;font-size:13px;font-family:'Segoe UI',Arial,sans-serif;direction:rtl;}
+  .tt-fi:focus{outline:none;border-color:var(--blue-light);}
+  .tt-fs{width:100%;background:#fff;border:1.5px solid #E2E8F0;color:#1E293B;padding:6px 10px;border-radius:8px;font-size:13px;font-family:'Segoe UI',Arial,sans-serif;direction:rtl;appearance:auto;}
+  .tt-fs:focus{outline:none;border-color:var(--blue-light);}
+  .tt-fs option{background:#fff;color:#1E293B;}
+  .tt-tfi{text-align:center;font-size:14px;font-weight:800;letter-spacing:3px;direction:ltr;}
+  .tt-tfi::placeholder{color:#94A3B8;font-size:13px;font-weight:400;letter-spacing:1px;}
+  .tt-hint{font-size:11px;color:#3b82f6;margin-top:2px;}
+  .tt-dur{display:inline-flex;align-items:center;gap:5px;background:var(--blue-pale);border:1px solid var(--blue-border);color:var(--blue);padding:5px 11px;border-radius:7px;font-size:13px;font-weight:800;margin-bottom:8px;}
+  .tt-chk{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+  .tt-chk input{width:15px;height:15px;accent-color:var(--blue);cursor:pointer;}
+  .tt-chk label{font-size:12px;cursor:pointer;color:#1E293B;}
+  .tt-add{width:100%;padding:8px;border-radius:9px;border:none;background:var(--blue);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(30,64,175,.2);}
+  .tt-add:hover{background:var(--blue-light);}
+  .tt-add:disabled{opacity:.4;cursor:not-allowed;}
+  .tt-lhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .tt-ltitle{font-size:12px;font-weight:700;color:#fff;display:flex;align-items:center;gap:4px;text-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .tt-cnt{background:rgba(255,255,255,.2);color:#fff;border-radius:20px;padding:1px 7px;font-size:10px;font-weight:700;}
+  .tt-wsum{font-size:11px;font-weight:700;color:#fff;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);padding:2px 8px;border-radius:20px;}
+  .tt-entries-wrap{margin-top:4px;}
+  .tt-entries-header{display:grid;grid-template-columns:110px 55px 1fr 1fr auto;align-items:center;gap:4px;padding:2px 8px 3px;font-size:10px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid rgba(255,255,255,.15);margin-bottom:3px;}
+  .tt-entry-sm{background:rgba(255,255,255,0.9);border:0.5px solid rgba(255,255,255,.4);border-radius:6px;padding:4px 8px;margin-bottom:3px;display:grid;grid-template-columns:110px 55px 1fr 1fr auto;align-items:center;gap:4px;font-size:11px;}
+  .tt-entry-sm:hover{border-color:rgba(99,147,255,.5);background:rgba(255,255,255,.97);}
+  .tt-esm-time{font-family:monospace;font-size:11px;font-weight:800;color:var(--blue);direction:ltr;white-space:nowrap;}
+  .tt-esm-h{font-weight:800;color:var(--blue);font-size:12px;text-align:center;}
+  .tt-esm-cli{font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tt-esm-wt{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tt-del{background:transparent;border:none;color:rgba(220,38,38,0.6);width:16px;height:16px;border-radius:4px;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .tt-del:hover{background:var(--red-bg);color:var(--red);}
+  .tt-empty{text-align:center;padding:18px;color:rgba(255,255,255,.7);font-size:12px;background:rgba(255,255,255,.08);border:1px dashed rgba(255,255,255,.2);border-radius:9px;}
+  .tt-month-pick{position:relative;display:inline-block;}
+  .tt-month-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:3px 10px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .tt-month-btn:hover{background:rgba(255,255,255,.25);}
+  .tt-month-dd{position:absolute;top:100%;right:0;margin-top:4px;background:rgba(15,23,42,0.95);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:6px;z-index:50;min-width:160px;backdrop-filter:blur(12px);box-shadow:0 8px 24px rgba(0,0,0,.4);}
+  .tt-month-dd div{padding:7px 12px;border-radius:6px;color:rgba(255,255,255,.8);font-size:13px;cursor:pointer;font-weight:600;text-align:right;}
+  .tt-month-dd div:hover{background:rgba(255,255,255,.15);color:#fff;}
+  .tt-month-dd div.on{background:var(--blue);color:#fff;}
+  .tt-gaps-section{margin-top:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 12px;}
+  .tt-gaps-title{font-size:14px;font-weight:700;color:#fbbf24;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+  .tt-gap-row{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:7px;cursor:pointer;color:rgba(255,255,255,.8);font-size:13px;transition:background .15s;}
+  .tt-gap-row:hover{background:rgba(255,255,255,.1);}
+  .tt-gap-row .gap-date{font-weight:700;color:#fff;}
+  .tt-gap-row .gap-hrs{font-weight:800;color:#fbbf24;}
+  #tt-stats-inline{transition:all .2s;}
+  .tt-stats{background:rgba(8,18,55,0.5);border:1px solid rgba(99,147,255,0.3);border-radius:10px;padding:10px;height:100%;}
+  .tt-stats-header{margin-bottom:6px;}
+  .tt-stats-title{font-size:10px;font-weight:700;color:rgba(255,255,255,.95);line-height:1.3;word-break:break-word;}
+  .tt-stats-total-badge{display:inline-block;background:rgba(59,130,246,0.4);border:1px solid rgba(99,147,255,0.4);border-radius:6px;padding:2px 7px;font-size:13px;font-weight:800;color:#fff;margin-top:4px;}
+  .tt-stats-months-bars{display:flex;gap:6px;align-items:flex-end;height:90px;margin-top:8px;}
+  .tt-stats-month{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;}
+  .tt-stats-month-bar{width:100%;border-radius:3px 3px 0 0;min-height:2px;}
+  .tt-stats-month .sm-val{font-size:11px;font-weight:700;color:#93c5fd;margin-top:3px;line-height:1;text-align:center;}
+  .tt-stats-month .sm-lbl{font-size:10px;color:rgba(255,255,255,.5);margin-top:2px;line-height:1;text-align:center;}
+  .tt-login{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;padding:20px;}
+  .tt-lbox{background:rgba(255,255,255,0.97);border:1px solid rgba(255,255,255,.5);border-radius:20px;padding:28px;width:300px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.2);}
+  .tt-lico{font-size:34px;margin-bottom:8px;}
+  .tt-lttl{font-size:18px;font-weight:800;color:var(--dark);margin-bottom:4px;}
+  .tt-lsub{color:var(--muted);font-size:12px;margin-bottom:14px;}
+  .tt-emplist{display:flex;flex-direction:column;gap:5px;max-height:240px;overflow-y:auto;margin-bottom:10px;}
+  .tt-ebtn{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 11px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;text-align:right;display:flex;align-items:center;gap:7px;width:100%;}
+  .tt-ebtn:hover{border-color:var(--blue-light);background:var(--blue-pale);}
+  .tt-eav{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-light));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;color:#fff;}
+  .tt-pass{width:100%;background:var(--surface);border:2px solid var(--border);color:var(--blue);padding:9px;border-radius:9px;font-size:20px;font-weight:800;text-align:center;letter-spacing:6px;font-family:inherit;direction:ltr;margin:8px 0;}
+  .tt-pass:focus{outline:none;border-color:var(--blue-light);}
+  .tt-pass.err{border-color:var(--red);color:var(--red);}
+  .tt-back{display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:10px;color:var(--blue-light);font-size:13px;font-weight:700;}
+  .tt-lbtn{width:100%;padding:10px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;}
+  .tt-lbtn:hover{background:var(--blue-light);}
+  .tt-srch{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:12px;font-family:inherit;direction:rtl;margin-bottom:8px;}
+  .tt-srch:focus{outline:none;border-color:var(--blue-light);}
+  .tt-perr{color:var(--red);font-size:11px;min-height:15px;text-align:center;}
+  .tt-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+  .tt-stat{background:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,.4);border-radius:10px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+  .tt-stat-v{font-size:20px;font-weight:800;color:var(--blue);}
+  .tt-stat-l{font-size:10px;color:var(--muted);margin-top:2px;}
+  .tt-bar-row{margin-bottom:8px;}
+  .tt-bar-lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--text);margin-bottom:3px;}
+  .tt-bar-lbl span:last-child{color:var(--blue);font-weight:700;}
+  .tt-bar-bg{background:var(--surface);border-radius:3px;height:7px;overflow:hidden;}
+  .tt-bar-fill{height:100%;border-radius:3px;}
+  .tt-period-btns{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;align-items:center;}
+  .tt-period-btn{padding:5px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);font-size:11px;cursor:pointer;font-family:inherit;}
+  .tt-period-btn.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700;}
+  .tt-range-row{display:flex;gap:6px;align-items:center;width:100%;margin-top:6px;}
+  .tt-range-input{background:rgba(255,255,255,.92);border:1.5px solid rgba(255,255,255,.3);color:var(--dark);padding:5px 8px;border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;direction:ltr;width:130px;}
+  .tt-range-input:focus{outline:none;border-color:var(--blue);}
+  .tt-range-lbl{color:rgba(255,255,255,.7);font-size:11px;font-weight:600;}
+  .tt-notes-row{display:flex;align-items:flex-end;gap:8px;margin-bottom:6px;}
+  .tt-timer{display:inline-flex;align-items:center;gap:6px;background:var(--blue-pale);border:1.5px solid var(--blue-border);color:var(--blue);padding:5px 12px;border-radius:8px;font-size:15px;font-weight:800;font-family:monospace;margin-bottom:0;white-space:nowrap;height:33px;}
+  .tt-timer-dot{width:7px;height:7px;border-radius:50%;background:var(--blue-light);flex-shrink:0;animation:tdblink 1s infinite;}
+  @keyframes tdblink{0%,100%{opacity:1}50%{opacity:.2}}
+  .tt-sp{display:inline-block;width:11px;height:11px;border:2px solid rgba(30,64,175,.2);border-top-color:var(--blue);border-radius:50%;animation:ttsp .6s linear infinite;vertical-align:middle;margin-left:4px;}
+  @keyframes ttsp{to{transform:rotate(360deg)}}
+  .tt-loader{display:flex;align-items:center;justify-content:center;min-height:200px;gap:10px;color:rgba(255,255,255,.7);font-size:13px;}
+  .tt-toast-el{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);padding:8px 18px;border-radius:9px;font-weight:700;font-size:12px;z-index:9999;white-space:nowrap;background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);box-shadow:0 4px 14px rgba(0,0,0,.15);animation:ttsu .2s ease;}
+  .tt-toast-el.err{background:var(--red-bg);border-color:var(--red-border);color:var(--red);}
+  @keyframes ttsu{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  .tt-datepicker{position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:500;display:flex;align-items:center;justify-content:center;}
+  .tt-dp-box{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px;width:280px;box-shadow:0 8px 32px rgba(0,0,0,.2);}
+  .tt-dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .tt-dp-title{font-size:14px;font-weight:800;color:var(--dark);}
+  .tt-dp-nav{background:var(--surface);border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:14px;}
+  .tt-dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+  .tt-dp-hdr{text-align:center;font-size:9px;color:var(--subtle);padding:2px 0;font-weight:700;}
+  .tt-dp-day{text-align:center;padding:6px 2px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text);}
+  .tt-dp-day:hover{background:var(--blue-pale);}
+  .tt-dp-day.today{border:1.5px solid var(--blue-light);color:var(--blue);font-weight:700;}
+  .tt-dp-day.selected{background:var(--blue);color:#fff;font-weight:700;}
+  .tt-dp-day.other{color:var(--subtle);}
+  .tt-dp-day.future{opacity:.3;cursor:not-allowed;}
+  .tt-dp-day.locked{opacity:.35;cursor:not-allowed;background:#fee2e2;color:#dc2626;}
+  .tt-save-btn{background:var(--blue);border:none;color:#fff;padding:0 12px;border-radius:8px;cursor:pointer;font-weight:700;font-size:11px;white-space:nowrap;flex-shrink:0;height:38px;font-family:inherit;}
+  .tt-save-btn:hover{background:var(--blue-light);}
+  #tt-panel-dash>.tt{max-width:none !important;}
+  .tt-dash-inner{max-width:1400px;margin:0 auto;}
+  .tt-dash-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:0;}
+  .tt-gap-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;}
+  .tt-gap-table th{background:rgba(30,64,175,0.1);color:var(--blue);font-weight:700;padding:7px 12px;text-align:right;border-bottom:2px solid var(--blue-border);}
+  .tt-gap-table td{padding:6px 12px;border-bottom:1px solid var(--border);color:var(--text);}
+  .tt-gap-table tr:last-child td{border-bottom:none;}
+  .tt-gap-table tr:hover td{background:rgba(30,64,175,0.03);}
+  .tt-gap-val{color:var(--yellow);font-weight:700;}
+  /* ══ ADMIN STYLES ══ */
+  .tt-admin-overlay{position:fixed;inset:0;background:rgba(8,18,55,0.85);z-index:800;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 12px 40px;}
+  .tt-admin-box{background:#fff;border-radius:18px;width:100%;max-width:1100px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4);}
+  .tt-admin-header{background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;}
+  .tt-admin-title{font-size:20px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;}
+  .tt-admin-close{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+  .tt-admin-close:hover{background:rgba(255,255,255,.25);}
+  .tt-admin-body{padding:16px 20px;direction:rtl;font-family:'Segoe UI',Arial,sans-serif;}
+  .tt-admin-tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:2px solid var(--border);padding-bottom:0;overflow-x:auto;}
+  .tt-admin-tab{padding:8px 16px;border-radius:8px 8px 0 0;border:none;background:transparent;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;}
+  .tt-admin-tab.on{color:var(--blue);border-bottom-color:var(--blue);background:var(--blue-pale);}
+  .tt-admin-tab:hover:not(.on){background:var(--surface);}
+  .tt-month-sel{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+  .tt-month-sel select{background:var(--surface);border:1.5px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:13px;font-family:inherit;direction:rtl;}
+  .tt-month-sel select:focus{outline:none;border-color:var(--blue-light);}
+  .tt-month-lbl{font-size:13px;font-weight:700;color:var(--text);}
+  .tt-emp-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .tt-emp-table th{background:var(--blue);color:#fff;font-weight:700;padding:9px 12px;text-align:right;position:sticky;top:0;}
+  .tt-emp-table td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;}
+  .tt-emp-table tr:hover td{background:var(--blue-pale);}
+  .tt-emp-table tr.gap-row td{background:#fffbeb;}
+  .tt-emp-name{font-weight:700;color:var(--dark);}
+  .tt-emp-h{font-weight:800;color:var(--blue);font-size:14px;}
+  .tt-emp-gap{font-weight:700;color:var(--yellow);}
+  .tt-emp-gap.big{color:var(--red);}
+  .tt-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;}
+  .tt-badge.ok{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+  .tt-badge.warn{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);}
+  .tt-badge.bad{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
+  .tt-att-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .tt-att-table th{background:var(--blue);color:#fff;font-weight:700;padding:9px 12px;text-align:right;position:sticky;top:0;}
+  .tt-att-table td{padding:7px 12px;border-bottom:1px solid var(--border);color:var(--text);}
+  .tt-att-table tr:hover td{background:var(--blue-pale);}
+  .tt-time-cell{font-family:monospace;font-weight:700;color:var(--blue);}
+  .tt-missing{color:#dc2626;font-style:italic;font-size:11px;}
+  .tt-lock-section{margin-bottom:18px;}
+  .tt-lock-title{font-size:14px;font-weight:700;color:var(--dark);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+  .tt-lock-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+  .tt-lock-input{background:var(--surface);border:1.5px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;font-family:inherit;direction:ltr;}
+  .tt-lock-input:focus{outline:none;border-color:var(--blue-light);}
+  .tt-lock-btn{background:var(--blue);border:none;color:#fff;padding:8px 16px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;}
+  .tt-lock-btn:hover{background:var(--blue-light);}
+  .tt-lock-btn.danger{background:var(--red);}
+  .tt-lock-btn.danger:hover{background:#b91c1c;}
+  .tt-lock-status{font-size:12px;padding:8px 12px;border-radius:8px;font-weight:600;}
+  .tt-lock-status.active{background:var(--red-bg);border:1px solid var(--red-border);color:var(--red);}
+  .tt-lock-status.inactive{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);}
+  .tt-cli-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .tt-cli-table th{background:var(--blue);color:#fff;font-weight:700;padding:9px 12px;text-align:right;}
+  .tt-cli-table td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+  .tt-cli-table tr:hover td{background:var(--blue-pale);}
+  .tt-toggle{position:relative;display:inline-block;width:38px;height:20px;flex-shrink:0;}
+  .tt-toggle input{opacity:0;width:0;height:0;}
+  .tt-toggle-slider{position:absolute;cursor:pointer;inset:0;background:#cbd5e1;transition:.2s;border-radius:20px;}
+  .tt-toggle-slider:before{position:absolute;content:"";height:14px;width:14px;right:3px;bottom:3px;background:#fff;transition:.2s;border-radius:50%;}
+  .tt-toggle input:checked + .tt-toggle-slider{background:var(--red);}
+  .tt-toggle input:checked + .tt-toggle-slider:before{transform:translateX(-18px);}
+  .tt-cli-blocked{color:var(--red);font-weight:700;font-size:11px;}
+  .tt-cli-ok{color:var(--green);font-weight:700;font-size:11px;}
+  .tt-blocked-modal{position:fixed;inset:0;background:rgba(15,23,42,.7);z-index:900;display:flex;align-items:center;justify-content:center;}
+  .tt-blocked-box{background:#fff;border-radius:16px;padding:28px;max-width:320px;width:90%;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,.3);}
+  .tt-blocked-icon{font-size:44px;margin-bottom:10px;}
+  .tt-blocked-title{font-size:16px;font-weight:800;color:var(--red);margin-bottom:8px;}
+  .tt-blocked-msg{font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;}
+  .tt-blocked-close{background:var(--blue);border:none;color:#fff;padding:10px 24px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;}
+  .tt-admin-sec{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;}
+  .tt-admin-sec-title{font-size:13px;font-weight:700;color:var(--blue);margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px;}
+  @media(max-width:767px){
+    .tt-r2{grid-template-columns:1fr !important;}
+    .tt{padding:8px 8px 24px;}
+    .tt-dash-cols{grid-template-columns:1fr !important;}
+    .tt-entries-header{display:none;}
+    .tt-entry-sm{grid-template-columns:85px 40px 1fr auto;}
+    .tt-esm-wt{display:none;}
+    .tt-admin-box{border-radius:12px;}
+    .tt-admin-body{padding:12px;}
+  }
+`;
+document.head.appendChild(_s);
+
+// ── CONFIG ────────────────────────────────────────────────────
+const PROXY_URL="https://app.lbcpa.co.il/api/airtable";
+const TABLES={employees:"tbl2NkTX2B5V0v3Vh",clients:"tblEJCS5WwolJ88PZ",workTypes:"tblavAtJvM0AGisde",attendance:"tblblLKnhsTfKWVA5",workEntries:"tblM9MsAgg5So1Sn0",holidays:"tbl6jPkS5uf5ifCZj"};
+const FE={fullName:"fldCo8bwUEjO8NGvq",status:"fldmCWnGz25l5c2L5",password:"fld2uJcLjBObxQNtd",hideFromTT:"fldrVYQMoAEibclQr",dailyHours:"fldBXoZPUHB6dmG26",role:"fldQofttjZIBPySST"};
+const FH={date:"fldaEMteu4Gk9guA7",name:"flddlWSjdmOzQsmMc"};
+const FC={name:"fld44goTyw5dtEunP",blocked:"fldUuWuOjOiKz6pmO"};
+const FW={name:"fldheopDfAhGTCpL1",active:"fldSPl54felVcT23H",allowedRoles:"fldX0npQraB1QERPN"};
+const FA={employee:"fldYwWpI2UCrzIVpV",date:"fldhoximxseaQC0Is",startTime:"fldwky7ITDabkGvKA",endTime:"fld2Li75khdTogMzk"};
+const FT={employee:"fld6kCXWyVexVTMxw",client:"fldnwEh5LKeymjzkG",workType:"fldY8Pu240yiuJynK",startTime:"fld21hO7ThUFyDggs",endTime:"fld6O2tSJsYcLEsyg",hours:"fldwLjjxX8pSdS6KS",notes:"fldJeDpvTJwfzRyCC",billable:"fldgJP6gAc45rq3Si",date:"fldkYiBpFckOvbMPb"};
+
+// ── LOCK STATE ────────────────────────────────────────────────
+function ttGetLockState(){try{return JSON.parse(localStorage.getItem("tt_lock_state")||"{}");}catch{return{};}}
+function ttSetLockState(obj){localStorage.setItem("tt_lock_state",JSON.stringify(obj));}
+function ttIsDateLocked(dateStr){
+  const ls=ttGetLockState();
+  if(ls.cutoffDate&&dateStr<=ls.cutoffDate)return true;
+  if(ls.lockedMonths&&ls.lockedMonths.includes(ttMonthKey(dateStr)))return true;
+  return false;
+}
+
+// ── STATE ─────────────────────────────────────────────────────
+let ttEmps=[],ttClients=[],ttWorkTypes=[],ttDays={},ttHolidays=[];
+function ttIsHoliday(ds){return ttHolidays.some(h=>h.date===ds);}
+function ttWorkingDaysInMonth(mk){const days=ttGetMonthDays(mk);const today=ttToday();return days.filter(ds=>{if(ds>today)return false;const dow=new Date(ds+"T12:00:00").getDay();return dow>=0&&dow<=4&&!ttIsHoliday(ds);}).length;}
+function ttExpectedHours(emp,mk){const dh=emp.fields[FE.dailyHours];if(!dh||dh<=0)return 0;return dh*ttWorkingDaysInMonth(mk);}
+let ttCurEmp=null,ttSelEmp=null,ttSelDate=ttToday();
+let ttTimeVals={arrive:"",leave:"",start:"",end:""};
+let ttToastT=null,ttActiveTab="day",ttDashPeriod="week",ttDashMonth=null;
+let ttTimerInterval=null,ttTimerStartMs=0;
+let ttReminderInterval=null,_ttLongWorkAlerted=false;
+let ttDashRangeFrom="",ttDashRangeTo="";
+let ttAdminActiveTab="summary",ttAdminMonth="";
+let ttAllDays={},ttAllEmpsData=[];
+
+// ── UTILS ─────────────────────────────────────────────────────
+function ttPad(n){return String(n).padStart(2,"0");}
+function ttToday(){const d=new Date();return`${d.getFullYear()}-${ttPad(d.getMonth()+1)}-${ttPad(d.getDate())}`;}
+function ttNow(){const d=new Date();return`${ttPad(d.getHours())}:${ttPad(d.getMinutes())}`;}
+function ttT2m(t){if(!t)return 0;const[h,m]=t.split(":").map(Number);return h*60+(m||0);}
+function ttFmtH(dec){const h=Math.floor(dec);const m=Math.round((dec-h)*60);return`${h}:${ttPad(m)}`;}
+function ttV(v){return/^\d{2}:\d{2}$/.test(v)&&+v.slice(0,2)<24&&+v.slice(3)<60;}
+function ttISO(d,t){if(!d||!t)return null;const[h,mi]=t.split(":").map(Number);const dt=new Date(d+"T00:00:00");dt.setHours(h,mi,0,0);return dt.toISOString();}
+function ttITime(iso){if(!iso)return"";const d=new Date(iso);return`${ttPad(d.getHours())}:${ttPad(d.getMinutes())}`;}
+function ttIDate(iso){if(!iso)return"";const d=new Date(iso);return`${d.getFullYear()}-${ttPad(d.getMonth()+1)}-${ttPad(d.getDate())}`;}
+function ttDLbl(d){const dn=["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];const dt=new Date(d+"T12:00:00");return`יום ${dn[dt.getDay()]}, ${ttPad(dt.getDate())}/${ttPad(dt.getMonth()+1)}/${dt.getFullYear()}`;}
+function ttDLblShort(d){const dt=new Date(d+"T12:00:00");return`${ttPad(dt.getDate())}/${ttPad(dt.getMonth()+1)}`;}
+function ttGetDay(d){return ttDays[d]||{attendId:null,arrive:"",leave:"",entries:[]};}
+function ttMonthKey(d){return d?d.slice(0,7):"";}
+function ttMonthLabel(k){if(!k)return"";const[y,m]=k.split("-");return["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"][+m-1]+" "+y;}
+function ttIsMonthlyType(name){return name&&(name.includes("שכר")||name.includes("הנה")||name.includes("הנהלת"));}
+function ttCurrentMonthKey(){const d=new Date();return`${d.getFullYear()}-${ttPad(d.getMonth()+1)}`;}
+function ttMonthOptions(){const opts=[];const today=new Date();for(let i=0;i<12;i++){const d=new Date(today.getFullYear(),today.getMonth()-i,1);const k=`${d.getFullYear()}-${ttPad(d.getMonth()+1)}`;opts.push({k,label:ttMonthLabel(k)});}return opts;}
+function ttGetMonthDays(mk){const[y,m]=mk.split("-").map(Number);const dim=new Date(y,m,0).getDate();const days=[];for(let d=1;d<=dim;d++)days.push(`${y}-${ttPad(m)}-${ttPad(d)}`);return days;}
+function ttIsClientBlocked(clientId){
+  const cli=ttClients.find(c=>c.id===clientId);
+  if(cli&&cli.fields[FC.blocked])return true;
+  const ls=ttGetLockState();
+  return!!(ls.blockedClients&&ls.blockedClients[clientId]);
+}
+function ttRoot(){return document.getElementById("tt-root");}
+function ttToast(msg,isErr){
+  let el=document.getElementById("tt-toast-el");
+  if(!el){el=document.createElement("div");el.id="tt-toast-el";document.body.appendChild(el);}
+  el.className="tt-toast-el"+(isErr?" err":"");el.textContent=msg;el.style.display="block";
+  if(ttToastT)clearTimeout(ttToastT);
+  ttToastT=setTimeout(()=>el.style.display="none",2800);
+}
+
+// ── TIMER ─────────────────────────────────────────────────────
+function ttStartTimer(s){
+  ttStopTimer();if(!s||!ttV(s))return;
+  const[h,m]=s.split(":").map(Number);const start=new Date();start.setHours(h,m,0,0);
+  if(start.getTime()>Date.now())return;
+  ttTimerStartMs=start.getTime();
+  setTimeout(()=>{
+    function tick(){const el=document.getElementById("tt-timer-val");if(!el){ttStopTimer();return;}const sec=Math.max(0,Math.floor((Date.now()-ttTimerStartMs)/1000));el.textContent=`${ttPad(Math.floor(sec/3600))}:${ttPad(Math.floor((sec%3600)/60))}:${ttPad(sec%60)}`;
+      const lw=ttGetSettings().longWork;if(lw.enabled&&!_ttLongWorkAlerted&&sec>=Math.max(1,lw.hours)*3600){_ttLongWorkAlerted=true;ttFireNotif("⏳ עבודה ממושכת",`עברו ${lw.hours} שעות רציפות על אותו לקוח — שקול הפסקה`);}
+    }
+    tick();ttTimerInterval=setInterval(tick,1000);
+  },50);
+}
+function ttStopTimer(){if(ttTimerInterval)clearInterval(ttTimerInterval);ttTimerInterval=null;_ttLongWorkAlerted=false;}
+
+// ── REMINDERS / NOTIFICATIONS ─────────────────────────────────
+function ttSettingsKey(){return ttCurEmp?`tt_settings_${ttCurEmp.id}`:null;}
+function ttDefaultSettings(){return{remindArrive:{enabled:true,time:"09:15"},remindLeave:{enabled:true,time:"17:30"},remindLeave2:{enabled:true,time:"18:30"},longWork:{enabled:false,hours:4}};}
+function ttGetSettings(){const k=ttSettingsKey();if(!k)return ttDefaultSettings();try{const s=JSON.parse(localStorage.getItem(k)||"null");return Object.assign(ttDefaultSettings(),s||{});}catch{return ttDefaultSettings();}}
+function ttSaveSettings(s){const k=ttSettingsKey();if(!k)return;try{localStorage.setItem(k,JSON.stringify(s));}catch{}}
+function ttRemFiredKey(date){return ttCurEmp?`tt_remfired_${ttCurEmp.id}_${date}`:null;}
+function ttGetRemFired(date){const k=ttRemFiredKey(date);if(!k)return{arrive:false,leave:false,leave2:false};try{return Object.assign({arrive:false,leave:false,leave2:false},JSON.parse(localStorage.getItem(k)||"{}"));}catch{return{arrive:false,leave:false,leave2:false};}}
+function ttSetRemFired(date,obj){const k=ttRemFiredKey(date);if(!k)return;try{localStorage.setItem(k,JSON.stringify(obj));}catch{}}
+function ttFireNotif(title,body){
+  try{
+    if(typeof Notification==="undefined")return;
+    if(Notification.permission==="granted"){new Notification(title,{body,silent:false});}
+    else if(Notification.permission!=="denied"){Notification.requestPermission().then(p=>{if(p==="granted")new Notification(title,{body});});}
+  }catch(e){}
+}
+function ttCheckReminders(){
+  if(!ttCurEmp)return;
+  const now=new Date();const day=now.getDay();
+  if(day===5||day===6)return;
+  const hhmm=`${ttPad(now.getHours())}:${ttPad(now.getMinutes())}`;
+  const today=ttToday();const s=ttGetSettings();const fired=ttGetRemFired(today);const ds=ttDays[today]||{};
+  if(s.remindArrive.enabled&&hhmm===s.remindArrive.time&&!ds.arrive&&!fired.arrive){
+    ttFireNotif("⏰ שכחת להיכנס?","לא הוקלדה שעת כניסה לעבודה היום");fired.arrive=true;ttSetRemFired(today,fired);
+  }
+  if(s.remindLeave.enabled&&hhmm===s.remindLeave.time&&!ds.leave&&!fired.leave){
+    ttFireNotif("🔔 סיום יום עבודה","האם הוקלדה שעת יציאה?");fired.leave=true;ttSetRemFired(today,fired);
+  }
+  if(s.remindLeave2.enabled&&hhmm===s.remindLeave2.time&&!ds.leave&&!fired.leave2){
+    ttFireNotif("⚠️ שעת יציאה חסרה","עדיין לא דווחה שעת יציאה להיום");fired.leave2=true;ttSetRemFired(today,fired);
+  }
+}
+function ttStartReminderEngine(){
+  if(ttReminderInterval)clearInterval(ttReminderInterval);
+  try{if(typeof Notification!=="undefined"&&Notification.permission==="default")Notification.requestPermission();}catch{}
+  ttCheckReminders();ttReminderInterval=setInterval(ttCheckReminders,60*1000);
+}
+function ttStopReminderEngine(){if(ttReminderInterval)clearInterval(ttReminderInterval);ttReminderInterval=null;}
+
+// ── DRAFT (persist unsaved work entry across browser close) ──────
+let ttDraft=null;
+function ttDraftKey(){return ttCurEmp?`tt-draft-${ttCurEmp.id}`:null;}
+function ttLoadDraftFromStorage(){try{const k=ttDraftKey();if(!k)return null;const s=localStorage.getItem(k);return s?JSON.parse(s):null;}catch{return null;}}
+window.ttSaveDraft=function(){
+  const k=ttDraftKey();if(!k)return;
+  const cliId=document.getElementById("tt-cli")?.value||"";
+  const wtId=document.getElementById("tt-wt")?.value||"";
+  const startEl=document.getElementById("tt-st");const startDom=startEl?.value||"";
+  const start=ttV(startDom)?startDom:(ttV(ttTimeVals.start||"")?ttTimeVals.start:(ttDraft?.start&&ttV(ttDraft.start)?ttDraft.start:""));
+  const notes=document.getElementById("tt-notes")?.value||"";
+  const billEl=document.getElementById("tt-bill");const bill=billEl?billEl.checked:true;
+  if(!cliId&&!wtId&&!start&&!notes){try{localStorage.removeItem(k);}catch{}ttDraft=null;return;}
+  const d={cliId,wtId,start,notes,bill,date:ttSelDate};
+  ttDraft=d;try{localStorage.setItem(k,JSON.stringify(d));}catch{}
+};
+function ttClearDraft(){const k=ttDraftKey();if(k){try{localStorage.removeItem(k);}catch{}}ttDraft=null;}
+window.addEventListener("beforeunload",function(){try{if(ttCurEmp&&window.ttSaveDraft)window.ttSaveDraft();}catch{}});
+window.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden"){try{if(ttCurEmp&&window.ttSaveDraft)window.ttSaveDraft();}catch{}}});
+
+// ── API ───────────────────────────────────────────────────────
+async function ttGet(table,filter,fieldIds){
+  let all=[],offset=null;
+  do{
+    // Retry transient failures (5xx, 429, network): Airtable occasionally returns
+    // bogus 4xx/5xx under load. 4xx client errors (except 429) do not retry.
+    let resp, lastErr;
+    for(let attempt=0; attempt<3; attempt++){
+      try{
+        resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'get',table,filter:filter||'',fields:fieldIds||[],offset})});
+        if(resp.ok)break;
+        if(resp.status>=500||resp.status===429){lastErr=new Error('Airtable error '+resp.status);await new Promise(r=>setTimeout(r,400*(attempt+1)));continue;}
+        throw new Error('Airtable error '+resp.status);
+      }catch(e){lastErr=e;if(attempt<2){await new Promise(r=>setTimeout(r,400*(attempt+1)));continue;}throw e;}
+    }
+    if(!resp||!resp.ok)throw lastErr||new Error('Airtable error');
+    const j=await resp.json();
+    if(j.error)throw new Error(j.error);
+    all=all.concat(j.records||[]);offset=j.offset||null;
+  }while(offset);
+  return all;
+}
+async function ttPost(table,fields){
+  const resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'post',table,data:fields})});
+  if(!resp.ok)throw new Error('Airtable error '+resp.status);
+  const j=await resp.json();if(j.error)throw new Error(j.error);return j;
+}
+async function ttPatch(table,id,fields){
+  const resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'patch',table,id,data:fields})});
+  if(!resp.ok)throw new Error('Airtable error '+resp.status);
+  const j=await resp.json();if(j.error)throw new Error(j.error);return j;
+}
+async function ttDel(table,id){
+  const resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',table,id})});
+  if(!resp.ok)throw new Error('Airtable error '+resp.status);
+  const j=await resp.json();if(j.error)throw new Error(j.error);return j;
+}
+
+// ── PASSWORD MASKING ──────────────────────────────────────────
+let _ttPassReal="",_ttAdminPassReal="";
+window.ttMaskPass=function(el){
+  const prev=_ttPassReal;const shown=el.value;
+  if(shown.length>prev.length){const added=shown.replace(/•/g,"");_ttPassReal=prev+added;}else{_ttPassReal=prev.slice(0,shown.length);}
+  el.classList.remove("err");const perr=document.getElementById("tt-perr");if(perr)perr.textContent="";
+  el.value="•".repeat(_ttPassReal.length);
+};
+window.ttMaskAdminPass=function(el){
+  const prev=_ttAdminPassReal;const shown=el.value;
+  if(shown.length>prev.length){const added=shown.replace(/•/g,"");_ttAdminPassReal=prev+added;}else{_ttAdminPassReal=prev.slice(0,shown.length);}
+  el.classList.remove("err");const perr=document.getElementById("tt-perr");if(perr)perr.textContent="";
+  el.value="•".repeat(_ttAdminPassReal.length);
+};
+
+// ── LOGIN ─────────────────────────────────────────────────────
+async function ttLoadEmps(){
+  ttRoot().innerHTML=`<div class="tt-loader"><span class="tt-sp" style="width:20px;height:20px;border-width:3px"></span><span>טוען עובדים...</span></div>`;
+  try{
+    const[recs,holRecs]=await Promise.all([
+      ttGet(TABLES.employees,"",[FE.fullName,FE.status,FE.hideFromTT,FE.dailyHours,FE.role]),
+      ttGet(TABLES.holidays,"",[FH.date,FH.name])
+    ]);
+    ttHolidays=holRecs.map(r=>({id:r.id,date:r.fields[FH.date]||"",name:r.fields[FH.name]||""})).filter(h=>h.date);
+    ttEmps=recs.filter(r=>{const st=r.fields[FE.status];const active=(st&&typeof st==="object"?st.name:st)==="פעיל";return active&&!r.fields[FE.hideFromTT];})
+      .sort((a,b)=>(a.fields[FE.fullName]||"").localeCompare(b.fields[FE.fullName]||"","he"));
+    // Fade out splash
+    const splash=document.getElementById("tt-splash");
+    if(splash){splash.classList.add("fade-out");setTimeout(()=>splash.remove(),400);}
+    // Auto-login: match logged-in user by name from the main-app OTP session
+    const norm=s=>String(s||"").replace(/\s+/g," ").trim();
+    const mainName=localStorage.getItem('lbcpa_name')||sessionStorage.getItem('lbcpa_name')||localStorage.getItem('lbcpa_user')||sessionStorage.getItem('lbcpa_user');
+    if(mainName){
+      const target=norm(mainName);const parts=target.split(" ").filter(Boolean);
+      let match=ttEmps.find(e=>norm(e.fields[FE.fullName])===target);
+      if(!match&&parts.length)match=ttEmps.find(e=>norm(e.fields[FE.fullName])===parts[0]);
+      if(!match&&parts.length)match=ttEmps.find(e=>parts.every(p=>norm(e.fields[FE.fullName]).includes(p)));
+      if(!match&&parts.length)match=ttEmps.find(e=>norm(e.fields[FE.fullName]).split(" ")[0]===parts[0]);
+      if(match){
+        ttSelEmp=match;ttCurEmp=match;
+        ttRoot().innerHTML=`<div class="tt-loader"><span class="tt-sp" style="width:20px;height:20px;border-width:3px"></span><span>טוען נתונים...</span></div>`;
+        ttLoadData();
+        return;
+      }
+    }
+    ttRenderLogin();
+  }catch(e){
+    const splash=document.getElementById("tt-splash");if(splash)splash.remove();
+    ttRoot().innerHTML=`<div class="tt-loader" style="color:#fca5a5">שגיאה: ${e.message}</div>`;
+  }
+}
+
+// ── OTP LOGIN (Electron desktop) ───────────────────────────────
+const AUTH_BASE="https://app.lbcpa.co.il/api";
+let _ttOtpEmail="";
+
+function ttRenderLogin(){
+  ttRoot().innerHTML=`<div style="min-height:calc(100vh - 48px);display:flex;align-items:center;justify-content:center;padding:20px">
+    <div class="tt-lbox">
+      <div class="tt-lico">⏱️</div>
+      <div class="tt-lttl">דיווח שעות</div>
+      <div class="tt-lsub">בן אבי רואה חשבון</div>
+      <div id="tt-otp-stage">
+        <div style="margin-top:14px;text-align:right">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">כתובת מייל</label>
+          <input class="tt-srch" type="email" id="tt-otp-email" placeholder="name@lbcpa.co.il" autocomplete="email" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin:0"/>
+        </div>
+        <div style="margin-top:10px;text-align:right">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">סיסמה</label>
+          <input class="tt-srch" type="password" id="tt-otp-pass" placeholder="••••••••" autocomplete="current-password" style="margin:0"/>
+        </div>
+        <div class="tt-perr" id="tt-perr" style="margin-top:8px"></div>
+        <button class="tt-lbtn" id="tt-otp-submit" onclick="ttSubmitCreds()">כניסה ←</button>
+      </div>
+      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
+        <button class="tt-lbtn" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);margin-top:0" onclick="ttOpenAdminLogin()">🔐 כניסת מנהל</button>
+      </div>
+    </div>
+  </div>`;
+  setTimeout(()=>{const p=document.getElementById("tt-otp-email");if(p)p.focus();},80);
+  setTimeout(()=>{
+    const e=document.getElementById("tt-otp-email"),p=document.getElementById("tt-otp-pass");
+    if(e)e.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();(p||{}).focus?.();}});
+    if(p)p.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();ttSubmitCreds();}});
+  },100);
+}
+
+window.ttSubmitCreds=async function(){
+  const email=(document.getElementById("tt-otp-email")?.value||"").trim().toLowerCase();
+  const password=document.getElementById("tt-otp-pass")?.value||"";
+  const perr=document.getElementById("tt-perr");
+  if(!email||!password){if(perr)perr.textContent="יש למלא מייל וסיסמה";return;}
+  const btn=document.getElementById("tt-otp-submit");if(btn){btn.disabled=true;btn.textContent="שולח...";}
+  try{
+    const deviceToken=localStorage.getItem("lbcpa_device_token")||null;
+    const body={email,password};if(deviceToken)body.deviceToken=deviceToken;
+    const res=await fetch(`${AUTH_BASE}/auth-login`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const data=await res.json();
+    if(!res.ok){if(perr)perr.textContent=data.error||"שגיאה";return;}
+    _ttOtpEmail=email;
+    if(data.skipOtp){ttFinishLogin(data);return;}
+    if(deviceToken)localStorage.removeItem("lbcpa_device_token");
+    ttRenderOtpStage(data.name||"");
+  }catch(e){if(perr)perr.textContent="שגיאת רשת, נסה שוב";}
+  finally{if(btn){btn.disabled=false;btn.textContent="כניסה ←";}}
+};
+
+function ttRenderOtpStage(firstName){
+  const stage=document.getElementById("tt-otp-stage");if(!stage)return;
+  stage.innerHTML=`
+    <div style="margin-top:8px;font-size:13px;color:var(--muted)">${firstName?"שלום "+firstName+", ":""}קוד אימות נשלח למייל</div>
+    <div style="margin-top:14px;text-align:right">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">קוד אימות (6 ספרות)</label>
+      <input class="tt-srch" type="text" id="tt-otp-code" placeholder="123456" maxlength="6" inputmode="numeric" pattern="\\d{6}" autocomplete="one-time-code" style="margin:0;letter-spacing:6px;font-size:18px;text-align:center"/>
+    </div>
+    <div class="tt-perr" id="tt-perr" style="margin-top:8px"></div>
+    <button class="tt-lbtn" id="tt-otp-submit" onclick="ttSubmitOtp()">אמת קוד ←</button>
+    <div style="text-align:center;margin-top:8px;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline" onclick="ttRenderLogin()">‹ חזור</div>`;
+  setTimeout(()=>{const p=document.getElementById("tt-otp-code");if(p)p.focus();},80);
+  setTimeout(()=>{
+    const c=document.getElementById("tt-otp-code");
+    if(c)c.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();ttSubmitOtp();}});
+  },100);
+}
+
+window.ttSubmitOtp=async function(){
+  const otp=(document.getElementById("tt-otp-code")?.value||"").trim();
+  const perr=document.getElementById("tt-perr");
+  if(otp.length!==6){if(perr)perr.textContent="יש להזין קוד בן 6 ספרות";return;}
+  const btn=document.getElementById("tt-otp-submit");if(btn){btn.disabled=true;btn.textContent="מאמת...";}
+  try{
+    const res=await fetch(`${AUTH_BASE}/auth-verify`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:_ttOtpEmail,otp,trust:true})});
+    const data=await res.json();
+    if(!res.ok){if(perr)perr.textContent=data.error||"קוד שגוי";return;}
+    ttFinishLogin(data);
+  }catch(e){if(perr)perr.textContent="שגיאת רשת, נסה שוב";}
+  finally{if(btn){btn.disabled=false;btn.textContent="אמת קוד ←";}}
+};
+
+function ttFinishLogin(data){
+  localStorage.setItem("lbcpa_auth","1");
+  localStorage.setItem("lbcpa_name",data.name||"");
+  if(data.token)localStorage.setItem("lbcpa_token",data.token);
+  if(data.deviceToken)localStorage.setItem("lbcpa_device_token",data.deviceToken);
+  const ttlMs=data.expiresIn?data.expiresIn*1000:14*24*60*60*1000;
+  localStorage.setItem("lbcpa_auth_expires",String(Date.now()+ttlMs));
+  // Match employee in already-loaded list and load their data
+  const norm=s=>String(s||"").replace(/\s+/g," ").trim();
+  const target=norm(data.name);const parts=target.split(" ").filter(Boolean);
+  let match=ttEmps.find(e=>norm(e.fields[FE.fullName])===target);
+  if(!match&&parts.length)match=ttEmps.find(e=>norm(e.fields[FE.fullName])===parts[0]);
+  if(!match&&parts.length)match=ttEmps.find(e=>parts.every(p=>norm(e.fields[FE.fullName]).includes(p)));
+  if(!match&&parts.length)match=ttEmps.find(e=>norm(e.fields[FE.fullName]).split(" ")[0]===parts[0]);
+  if(!match){
+    const perr=document.getElementById("tt-perr");if(perr)perr.textContent="המשתמש לא נמצא ברשימת העובדים הפעילים";
+    return;
+  }
+  ttSelEmp=match;ttCurEmp=match;
+  ttRoot().innerHTML=`<div class="tt-loader"><span class="tt-sp" style="width:20px;height:20px;border-width:3px"></span><span>טוען נתונים...</span></div>`;
+  ttLoadData();
+}
+
+window.ttOpenAdminLogin=function(){
+  _ttAdminPassReal="";
+  const cont=document.querySelector(".tt-lbox");if(!cont)return;
+  cont.innerHTML=`
+    <div class="tt-back" onclick="ttRenderLogin()">‹ חזרה</div>
+    <div class="tt-lico">🔐</div>
+    <div class="tt-lttl">כניסת מנהל</div>
+    <div class="tt-lsub">בן אבי רואה חשבון</div>
+    <input class="tt-pass" type="text" id="tt-admin-pass" placeholder="••••"
+      autocomplete="off" autocorrect="off" spellcheck="false"
+      oninput="ttMaskAdminPass(this)" onkeydown="if(event.key==='Enter')ttDoAdminLogin()"/>
+    <div class="tt-perr" id="tt-perr"></div>
+    <button class="tt-lbtn" style="background:linear-gradient(135deg,#7c3aed,#6d28d9)" onclick="ttDoAdminLogin()">כניסה לדשבורד מנהלים ←</button>`;
+  setTimeout(()=>{const p=document.getElementById("tt-admin-pass");if(p)p.focus();},80);
+};
+
+window.ttDoAdminLogin=function(){
+  if(_ttAdminPassReal.trim()!==ADMIN_PASS){
+    const inp=document.getElementById("tt-admin-pass");if(inp){inp.classList.add("err");inp.value="";}
+    _ttAdminPassReal="";const perr=document.getElementById("tt-perr");if(perr)perr.textContent="סיסמא שגויה";return;
+  }
+  _ttAdminPassReal="";
+  ttOpenAdminDashboard();
+};
+
+// ── LOAD DATA ─────────────────────────────────────────────────
+async function ttLoadData(){
+  try{
+    const ago=new Date();ago.setDate(ago.getDate()-180);const agoStr=ago.toISOString().slice(0,10);
+    const empId=ttCurEmp.id;const empName=(ttCurEmp.fields[FE.fullName]||"").replace(/'/g,"\\'");
+    let[cls,wts,attR,wrkR]=await Promise.all([
+      ttGet(TABLES.clients,`{${FC.name}}!=''`,[FC.name,FC.blocked]),
+      ttGet(TABLES.workTypes,`{${FW.active}}='פעיל'`,[FW.name,FW.allowedRoles]),
+      ttGet(TABLES.attendance,`IS_AFTER({${FA.date}},'${agoStr}')`,[FA.employee,FA.date,FA.startTime,FA.endTime]),
+      ttGet(TABLES.workEntries,`AND(IS_AFTER({${FT.date}},'${agoStr}'),FIND('${empName}',ARRAYJOIN({${FT.employee}})))`,[FT.employee,FT.client,FT.workType,FT.startTime,FT.endTime,FT.hours,FT.notes,FT.billable,FT.date]),
+    ]);
+    console.log("[tt] loaded",wrkR.length,"work entries for",empName,"| empId:",empId);
+    ttClients=cls.sort((a,b)=>(a.fields[FC.name]||"").localeCompare(b.fields[FC.name]||"","he"));
+    ttWorkTypes=wts.sort((a,b)=>(a.fields[FW.name]||"").localeCompare(b.fields[FW.name]||"","he"));
+    ttDays={};
+    attR=attR.filter(r=>(r.fields[FA.employee]||[]).includes(empId));
+    wrkR=wrkR.filter(r=>(r.fields[FT.employee]||[]).includes(empId));
+    console.log("[tt] after emp filter:",wrkR.length,"entries | ttDays dates will be:",wrkR.map(r=>r.fields[FT.date]||"no-date").slice(0,5));
+    attR.forEach(r=>{const date=(r.fields[FA.date]||"").slice(0,10);if(!date)return;if(!ttDays[date])ttDays[date]={attendId:null,arrive:"",leave:"",entries:[]};ttDays[date].attendId=r.id;ttDays[date].arrive=ttITime(r.fields[FA.startTime]);ttDays[date].leave=ttITime(r.fields[FA.endTime]);});
+    wrkR.forEach(r=>{const date=r.fields[FT.date]?r.fields[FT.date].slice(0,10):r.fields[FT.startTime]?ttIDate(r.fields[FT.startTime]):null;if(!date)return;if(!ttDays[date])ttDays[date]={attendId:null,arrive:"",leave:"",entries:[]};const sISO=r.fields[FT.startTime],eISO=r.fields[FT.endTime];const startT=sISO?ttITime(sISO):"",endT=eISO?ttITime(eISO):"";const sm=ttT2m(startT),em=ttT2m(endT);ttDays[date].entries.push({id:r.id,clientId:(r.fields[FT.client]||[])[0]||"",workTypeId:(r.fields[FT.workType]||[])[0]||"",start:startT,end:endT,notes:r.fields[FT.notes]||"",hours:r.fields[FT.hours]||(em>sm?(em-sm)/60:0)});});
+    Object.values(ttDays).forEach(d=>d.entries.sort((a,b)=>a.start.localeCompare(b.start)));
+    // Restore in-progress entry draft from a previous browser session
+    const draft=ttLoadDraftFromStorage();
+    if(draft&&draft.date){
+      ttDraft=draft;ttSelDate=draft.date;
+      if(draft.start)ttTimeVals.start=draft.start;
+    }
+    ttRenderMain();
+    ttStartReminderEngine();
+    if(draft&&draft.date)setTimeout(()=>ttToast("✓ שוחזר דיווח שהתחלת בעבר"),250);
+  }catch(e){ttRoot().innerHTML=`<div class="tt-loader" style="color:#fca5a5">שגיאה: ${e.message}</div>`;}
+}
+
+// ── MAIN SHELL ────────────────────────────────────────────────
+function ttIsManager(){
+  const r=ttCurEmp?.fields?.[FE.role];
+  const roleName=r&&typeof r==="object"?r.name:r;
+  return roleName==="מנהל";
+}
+function ttRenderMain(){
+  const name=ttCurEmp.fields[FE.fullName]||"";
+  const adminBtn=ttIsManager()?`<button class="tt-xbtn" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;padding:4px 10px;font-size:11px" onclick="ttOpenAdminDashboard()">🔐 מנהל</button>`:"";
+  const settingsBtn=`<button class="tt-xbtn" title="הגדרות תזכורות" style="padding:4px 8px;font-size:14px" onclick="ttOpenSettings()">⚙️</button>`;
+  ttRoot().innerHTML=`
+  <div class="tt-bar">
+    <div class="tt-bar-title">⏱ דיווח שעות</div>
+    <div class="tt-bar-r">
+      ${settingsBtn}
+      ${adminBtn}
+      <div style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="ttLogout()">
+        <div class="tt-av">${name[0]||"?"}</div>
+        <span class="tt-nm">${name}</span>
+        <span style="font-size:14px;color:var(--muted)">‹</span>
+      </div>
+    </div>
+  </div>
+  <div class="tt">
+    <div class="tt-tabs">
+      <button class="tt-tab${ttActiveTab==='day'?' on':''}" onclick="ttSwitchTab('day',this)">📅 יום עבודה</button>
+      <button class="tt-tab${ttActiveTab==='dash'?' on':''}" onclick="ttSwitchTab('dash',this)">📊 דשבורד</button>
+    </div>
+    <div id="tt-panel-day" style="${ttActiveTab!=='day'?'display:none':''}"></div>
+    <div id="tt-panel-dash" style="${ttActiveTab!=='dash'?'display:none':''}"></div>
+  </div>`;
+  if(ttActiveTab==='day')ttRenderDay();else ttRenderDash();
+}
+
+window.ttSwitchTab=function(tab,btn){
+  ttActiveTab=tab;
+  document.querySelectorAll('.tt-tab').forEach(b=>b.classList.remove('on'));if(btn)btn.classList.add('on');
+  document.getElementById('tt-panel-day').style.display=tab==='day'?'':'none';
+  document.getElementById('tt-panel-dash').style.display=tab==='dash'?'':'none';
+  if(tab==='day')ttRenderDay();else ttRenderDash();
+};
+
+window.ttLogout=function(){
+  ttStopReminderEngine();
+  ttCurEmp=null;ttSelEmp=null;ttSelDate=ttToday();
+  ttTimeVals={arrive:"",leave:"",start:"",end:""};ttStopTimer();ttRenderLogin();
+};
+
+// ── SETTINGS MODAL ───────────────────────────────────────────
+window.ttOpenSettings=function(){
+  document.getElementById("tt-settings-modal")?.remove();
+  const s=ttGetSettings();
+  const row=(label,id,enabled,extra)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);margin-bottom:8px">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:var(--dark)">${label}</div>
+        <div style="margin-top:6px">${extra}</div>
+      </div>
+      <label class="tt-switch" style="position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0">
+        <input type="checkbox" id="${id}" ${enabled?'checked':''} style="opacity:0;width:0;height:0">
+        <span class="tt-slider" style="position:absolute;cursor:pointer;inset:0;background:#cbd5e1;border-radius:22px;transition:.2s"></span>
+      </label>
+    </div>`;
+  const html=`
+    <div id="tt-settings-modal" style="position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px">
+      <div style="background:#fff;border-radius:14px;max-width:440px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 12px 48px rgba(0,0,0,.3)">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:15px;font-weight:800;color:var(--dark)">⚙️ הגדרות תזכורות</div>
+          <button onclick="ttCloseSettings()" style="background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer">×</button>
+        </div>
+        <div style="padding:14px 16px">
+          ${row("⏰ תזכורת לדיווח שעת כניסה","st-arr-on",s.remindArrive.enabled,
+            `<input type="time" id="st-arr-time" value="${s.remindArrive.time}" style="font-family:inherit;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;direction:ltr">`)}
+          ${row("🔔 תזכורת לדיווח שעת יציאה","st-lv-on",s.remindLeave.enabled,
+            `<input type="time" id="st-lv-time" value="${s.remindLeave.time}" style="font-family:inherit;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;direction:ltr">`)}
+          ${row("⚠️ תזכורת חוזרת ליציאה","st-lv2-on",s.remindLeave2.enabled,
+            `<input type="time" id="st-lv2-time" value="${s.remindLeave2.time}" style="font-family:inherit;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;direction:ltr">`)}
+          ${row("⏳ עבודה ממושכת על אותו לקוח","st-lw-on",s.longWork.enabled,
+            `<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">התראה אחרי <input type="number" id="st-lw-hrs" value="${s.longWork.hours}" min="1" max="12" step="0.5" style="font-family:inherit;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;width:64px;direction:ltr"> שעות רציפות</div>`)}
+          <div style="margin-top:6px;padding:10px;background:#f1f5f9;border-radius:8px;font-size:11px;color:var(--muted);line-height:1.5">
+            התזכורות פועלות רק בימי א'-ה'. ההגדרות נשמרות פר-מכשיר ומקושרות למשתמש המחובר.
+          </div>
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+          <button class="tt-xbtn" onclick="ttCloseSettings()">ביטול</button>
+          <button class="tt-xbtn" style="background:var(--blue);color:#fff;border-color:var(--blue)" onclick="ttSaveSettingsFromModal()">שמירה</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML("beforeend",html);
+  // toggle visual styling
+  document.querySelectorAll("#tt-settings-modal input[type=checkbox]").forEach(cb=>{
+    const sl=cb.nextElementSibling;
+    const apply=()=>{sl.style.background=cb.checked?"var(--blue)":"#cbd5e1";sl.style.boxShadow=cb.checked?"inset 18px 0 0 0 var(--blue)":"";};
+    apply();cb.addEventListener("change",apply);
+    sl.style.cursor="pointer";sl.addEventListener("click",e=>{e.preventDefault();cb.checked=!cb.checked;apply();});
+    // knob
+    const knob=document.createElement("span");
+    knob.style.cssText="position:absolute;top:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)";
+    sl.appendChild(knob);
+    const moveKnob=()=>{knob.style.left=cb.checked?"2px":"";knob.style.right=cb.checked?"":"2px";};
+    moveKnob();cb.addEventListener("change",moveKnob);
+  });
+};
+window.ttCloseSettings=function(){document.getElementById("tt-settings-modal")?.remove();};
+window.ttSaveSettingsFromModal=function(){
+  const s={
+    remindArrive:{enabled:document.getElementById("st-arr-on").checked,time:document.getElementById("st-arr-time").value||"09:15"},
+    remindLeave:{enabled:document.getElementById("st-lv-on").checked,time:document.getElementById("st-lv-time").value||"17:30"},
+    remindLeave2:{enabled:document.getElementById("st-lv2-on").checked,time:document.getElementById("st-lv2-time").value||"18:30"},
+    longWork:{enabled:document.getElementById("st-lw-on").checked,hours:Math.max(1,Math.min(12,parseFloat(document.getElementById("st-lw-hrs").value)||4))}
+  };
+  ttSaveSettings(s);ttCloseSettings();ttToast("✓ הגדרות נשמרו");
+};
+
+// ── DATE PICKER ───────────────────────────────────────────────
+window.ttOpenDatePicker=function(){
+  const today=ttToday();let vy=+ttSelDate.slice(0,4),vm=+ttSelDate.slice(5,7)-1;
+  function render(){
+    document.getElementById("tt-dp")?.remove();
+    const dp=document.createElement("div");dp.id="tt-dp";dp.className="tt-datepicker";dp.onclick=e=>{if(e.target===dp)dp.remove();};
+    const mN=["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+    const dH=["א'","ב'","ג'","ד'","ה'","ו'","ש'"];
+    const first=new Date(vy,vm,1).getDay();const dim=new Date(vy,vm+1,0).getDate();
+    let cells=dH.map(d=>`<div class="tt-dp-hdr">${d}</div>`).join("");
+    for(let i=0;i<first;i++)cells+=`<div></div>`;
+    for(let d=1;d<=dim;d++){
+      const ds=`${vy}-${ttPad(vm+1)}-${ttPad(d)}`;const isFut=ds>today;const isLock=ttIsDateLocked(ds);
+      let cls="tt-dp-day";if(ds===today)cls+=" today";if(ds===ttSelDate)cls+=" selected";if(isFut)cls+=" future";if(isLock)cls+=" locked";
+      cells+=`<div class="${cls}" ${(isFut||isLock)?"":"onclick=\"ttPickDate('"+ds+"')\""} ${isLock?'title="נעול לעריכה"':''}>${d}${isLock?'🔒':''}</div>`;
+    }
+    dp.innerHTML=`<div class="tt-dp-box"><div class="tt-dp-head"><button class="tt-dp-nav" onclick="ttDPNav(-1)">›</button><div class="tt-dp-title">${mN[vm]} ${vy}</div><button class="tt-dp-nav" onclick="ttDPNav(1)">‹</button></div><div class="tt-dp-grid">${cells}</div></div>`;
+    document.body.appendChild(dp);
+  }
+  window.ttDPNav=d=>{vm+=d;if(vm>11){vm=0;vy++;}if(vm<0){vm=11;vy--;}render();};
+  window.ttPickDate=d=>{if(ttIsDateLocked(d)){ttToast("🔒 תאריך נעול לעריכה",true);return;}ttSelDate=d;document.getElementById("tt-dp")?.remove();ttTimeVals={arrive:"",leave:"",start:"",end:""};ttStopTimer();ttRenderDay();};
+  render();
+};
+
+// ── PREV DAY CHECK ────────────────────────────────────────────
+function ttCheckPrevDayLeave(){
+  for(let i=1;i<=14;i++){const dt=new Date(ttSelDate+"T12:00:00");dt.setDate(dt.getDate()-i);const ds=`${dt.getFullYear()}-${ttPad(dt.getMonth()+1)}-${ttPad(dt.getDate())}`;const prev=ttDays[ds];if(!prev)continue;const hasArrive=prev.arrive&&ttV(prev.arrive);if(hasArrive&&!prev.leave)return`<div class="tt-alert warn">⚠️ ביום <strong>${ttDLbl(ds)}</strong> לא הוזנה שעת יציאה. יש לסגור את יום העבודה הקודם לפני הזנת כניסה חדשה.<button onclick="ttGoToDate('${ds}')" style="margin-right:8px;background:var(--yellow);border:none;color:#fff;padding:3px 10px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;">מעבר ליום →</button></div>`;if(hasArrive&&prev.leave)break;}
+  return"";
+}
+window.ttGoToDate=function(ds){ttSelDate=ds;ttTimeVals={arrive:"",leave:"",start:"",end:""};ttStopTimer();ttRenderDay();};
+
+// ── CLIENT BLOCKED MODAL ──────────────────────────────────────
+function ttShowClientBlocked(clientName){
+  document.getElementById("tt-blocked-modal")?.remove();
+  const m=document.createElement("div");m.id="tt-blocked-modal";m.className="tt-blocked-modal";
+  m.innerHTML=`<div class="tt-blocked-box">
+    <div class="tt-blocked-icon">🚫</div>
+    <div class="tt-blocked-title">לקוח חסום לדיווח</div>
+    <div class="tt-blocked-msg">הלקוח <strong>${clientName}</strong> חסום לדיווח שעות.<br>יש לקבל אישור ממנהל לפני ביצוע דיווח עבור לקוח זה.</div>
+    <button class="tt-blocked-close" onclick="document.getElementById('tt-blocked-modal').remove();document.getElementById('tt-cli').value='';">הבנתי</button>
+  </div>`;
+  document.body.appendChild(m);
+}
+
+// ── DAY VIEW ─────────────────────────────────────────────────
+function ttRenderDay(){
+  ttStopTimer();
+  const today=ttToday();const isLocked=ttIsDateLocked(ttSelDate);
+  const d=ttGetDay(ttSelDate);
+  ttTimeVals.arrive=d.arrive||"";ttTimeVals.leave=d.leave||"";
+  const attH=(d.arrive&&d.leave&&ttV(d.arrive)&&ttV(d.leave))?Math.max(0,(ttT2m(d.leave)-ttT2m(d.arrive))/60):0;
+  const workH=d.entries.reduce((s,e)=>{const m=ttT2m(e.end)-ttT2m(e.start);return s+(m>0?m/60:0);},0);
+  const gap=attH-workH;
+  const alertHTML=(attH>0&&workH>0&&gap>0.25)?`<div class="tt-alert warn">⚠️ פער של <strong style="margin:0 3px">${ttFmtH(gap)}</strong> שע'</div>`:(attH>0&&workH>0&&gap<=0.25)?`<div class="tt-alert ok">✓ כל שעות הנוכחות מוסברות</div>`:"";
+  const lastEnd=d.entries.length>0?d.entries[d.entries.length-1].end:"";
+  // Restore unsaved entry draft for this day (persisted across browser sessions)
+  const draftForDay=(ttDraft&&ttDraft.date===ttSelDate)?ttDraft:null;
+  if(draftForDay&&!ttTimeVals.start&&draftForDay.start)ttTimeVals.start=draftForDay.start;
+  const defStart=ttTimeVals.start||draftForDay?.start||(ttV(lastEnd)?lastEnd:"");if(defStart&&ttV(defStart))ttTimeVals.start=defStart;
+  const draftCli=draftForDay?.cliId||"";
+  const draftWt=draftForDay?.wtId||"";
+  const draftNotes=(draftForDay?.notes||"").replace(/"/g,"&quot;");
+  const draftBill=draftForDay?draftForDay.bill!==false:true;
+  const cliOpts=ttClients.map(c=>{const bl=ttIsClientBlocked(c.id);return`<option value="${c.id}"${bl?' data-blocked="true"':''}${c.id===draftCli?' selected':''}>${bl?'🔒 ':''} ${c.fields[FC.name]||""}</option>`;}).join("");
+  const empRole=ttCurEmp.fields[FE.role];const empRoleName=empRole&&typeof empRole==="object"?empRole.name:empRole;
+  const filteredWt=ttWorkTypes.filter(w=>{const allowed=w.fields[FW.allowedRoles];if(!allowed||!allowed.length)return true;return allowed.some(r=>(typeof r==="object"?r.name:r)===empRoleName);});
+  const wtOpts=filteredWt.map(w=>`<option value="${w.id}"${w.id===draftWt?' selected':''}>${w.fields[FW.name]||""}</option>`).join("");
+  const prevWarn=(!isLocked)?ttCheckPrevDayLeave():"";
+  const arriveBlocked=!!prevWarn;
+  const dlbl=ttDLbl(ttSelDate)+(ttSelDate===today?` <span class="tt-today">היום</span>`:"")+(isLocked?` <span class="tt-today" style="background:rgba(220,38,38,.4);border-color:rgba(220,38,38,.5)">🔒 נעול</span>`:"");
+  let entriesHTML=d.entries.length===0?`<div class="tt-empty">עדיין לא נוספו דיווחים היום</div>`:
+    `<div class="tt-entries-wrap"><div class="tt-entries-header"><span>שעות</span><span style="text-align:center">סה"כ</span><span>לקוח</span><span>סוג עבודה</span><span></span></div>${
+      d.entries.map(e=>{const mm=ttT2m(e.end)-ttT2m(e.start);const h=mm>0?ttFmtH(mm/60):"—";const cn=ttClients.find(c=>c.id===e.clientId)?.fields[FC.name]||"";const wn=ttWorkTypes.find(w=>w.id===e.workTypeId)?.fields[FW.name]||"";
+        return`<div class="tt-entry-sm"><span class="tt-esm-time">${e.start}–${e.end}</span><span class="tt-esm-h">${h}</span><span class="tt-esm-cli">${cn}</span><span class="tt-esm-wt">${wn}</span>${!isLocked?`<button class="tt-del" onclick="ttDelEntry('${e.id}','${ttSelDate}')">✕</button>`:`<span style="font-size:11px;opacity:.4">🔒</span>`}</div>`;
+      }).join("")
+    }</div>`;
+  const showTimer=defStart&&ttV(defStart)&&!isLocked;
+  const panel=document.getElementById("tt-panel-day");if(!panel)return;
+  panel.innerHTML=`
+    <div class="tt-dbar">
+      <div class="tt-dlbl" onclick="ttOpenDatePicker()">${dlbl} 📆</div>
+      <div class="tt-nav"><button onclick="ttChangeDay(-1)">‹</button><button onclick="ttChangeDay(1)" ${ttSelDate>=today?"disabled":""}>›</button></div>
+    </div>
+    ${isLocked?`<div class="tt-alert err">🔒 תאריך זה נעול על ידי המנהל — לא ניתן לערוך</div>`:""}
+    ${prevWarn}
+    <div class="tt-att">
+      <div class="tt-att-top"><div class="tt-att-title">🏢 נוכחות</div>${attH>0?`<div class="tt-att-sum">סה"כ: <span>${ttFmtH(attH)}</span> שע'</div>`:""}</div>
+      <div class="tt-att-row">
+        <div class="tt-afield"><label>כניסה לעבודה</label>
+          <div style="display:flex;gap:5px;align-items:center">
+            <input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" id="tt-arr" class="tt-tbox${d.arrive?" set":""}" value="${d.arrive||""}" autocomplete="off" style="flex:1" oninput="ttOnTime(this,'arrive')" ondblclick="ttSetNow('arrive')" ${(arriveBlocked||isLocked)?'disabled':''}/>
+            ${(!isLocked&&d.arrive&&!d.leave)?`<button class="tt-del" onclick="ttClearArrive()" title="איפוס שעת כניסה" style="width:38px;height:38px;font-size:14px">✕</button>`:''}
+          </div>
+          ${isLocked?'<div class="tt-dbl">🔒 נעול</div>':(d.arrive&&!d.leave)?'<div class="tt-dbl">לחץ ✕ לאיפוס אם נרשם בטעות</div>':''}</div>
+        <div class="tt-afield"><label>יציאה מעבודה</label>
+          <div style="display:flex;gap:5px;align-items:center">
+            <input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" id="tt-lv" class="tt-tbox${d.leave?" set":""}" value="${d.leave||""}" autocomplete="off" style="flex:1" oninput="ttOnTime(this,'leave')" ondblclick="ttSetNow('leave')" ${isLocked?'disabled':''}/>
+            ${!isLocked?`<button class="tt-save-btn" onclick="ttSaveLeave()">שמור</button>`:""}
+          </div>
+          ${isLocked?'<div class="tt-dbl">🔒 נעול</div>':''}</div>
+      </div>
+    </div>
+    ${alertHTML}
+    ${!isLocked?`<div style="display:flex;gap:10px;align-items:flex-start">
+      <div class="tt-form" style="flex:1;min-width:0">
+        <div class="tt-ftitle">➕ הוסף דיווח עבודה</div>
+        <div class="tt-r2">
+          <div><label class="tt-fl">לקוח *</label><select class="tt-fs" id="tt-cli" onchange="ttOnCliChange();ttSaveDraft()" autocomplete="off"><option value="">— בחר לקוח —</option>${cliOpts}</select></div>
+          <div><label class="tt-fl">סוג עבודה *</label><select class="tt-fs" id="tt-wt" onchange="ttOnSelChange();ttSaveDraft()" autocomplete="off"><option value="">— בחר —</option>${wtOpts}</select></div>
+        </div>
+        <div class="tt-r2">
+          <div><label class="tt-fl">שעת התחלה *</label><input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" id="tt-st" class="tt-fi tt-tfi" value="${defStart}" autocomplete="off" oninput="ttOnTime(this,'start');ttOnStartChange();ttSaveDraft()" ondblclick="ttSetNow('start')"/></div>
+          <div><label class="tt-fl">שעת סיום *</label><input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" id="tt-en" class="tt-fi tt-tfi" autocomplete="off" oninput="ttOnTime(this,'end')" ondblclick="ttSetNow('end')"/></div>
+        </div>
+        <div id="tt-dur"></div>
+        <div class="tt-notes-row"><div class="tt-fg" style="flex:1;margin-bottom:0"><label class="tt-fl">הערות</label><input class="tt-fi" type="text" id="tt-notes" placeholder="תיאור קצר..." value="${draftNotes}" oninput="ttSaveDraft()" autocomplete="off"/></div><div id="tt-timer-wrap">${showTimer?`<div class="tt-timer"><span class="tt-timer-dot"></span><span id="tt-timer-val">00:00:00</span></div>`:""}</div></div>
+        <div class="tt-chk"><input type="checkbox" id="tt-bill" ${draftBill?'checked':''} onchange="ttSaveDraft()"/><label for="tt-bill">לחיוב לקוח</label></div>
+        <button class="tt-add" id="tt-addbtn" onclick="ttAddEntry()">💾 שמור דיווח</button>
+      </div>
+    </div>`:""}
+    <div id="tt-stats-inline"></div>
+    <div class="tt-lhead">
+      <div class="tt-ltitle">📋 עבודות היום <span class="tt-cnt">${d.entries.length}</span></div>
+      ${workH>0?`<div class="tt-wsum">${ttFmtH(workH)} שעות</div>`:""}
+    </div>
+    ${entriesHTML}
+    ${ttBuildGapDays()}`;
+  if(showTimer)setTimeout(()=>ttStartTimer(defStart),30);
+  if(draftForDay&&(draftCli||draftWt))setTimeout(()=>ttRenderStats(draftCli,draftWt),30);
+}
+
+window.ttOnCliChange=function(){
+  const cId=document.getElementById("tt-cli")?.value;
+  if(cId&&ttIsClientBlocked(cId)){const cName=ttClients.find(c=>c.id===cId)?.fields[FC.name]||"לקוח";ttShowClientBlocked(cName);}
+  ttOnSelChange();
+};
+window.ttOnSelChange=function(){
+  const cId=document.getElementById("tt-cli")?.value;const wId=document.getElementById("tt-wt")?.value;
+  ttRenderStats(cId,wId);
+};
+window.ttOnStartChange=function(){
+  const s=ttTimeVals.start;if(!s||!ttV(s))return;ttStartTimer(s);
+  const wrap=document.getElementById("tt-timer-wrap");if(!wrap)return;
+  if(!document.getElementById("tt-timer-val")){wrap.innerHTML=`<div class="tt-timer"><span class="tt-timer-dot"></span><span id="tt-timer-val">00:00:00</span></div>`;setTimeout(()=>ttStartTimer(s),20);}
+};
+
+// ── TIME INPUT ────────────────────────────────────────────────
+window.ttOnTime=function(el,field){
+  const digits=el.value.replace(/\D/g,"").slice(0,4);const fmt=digits.length>2?digits.slice(0,2)+":"+digits.slice(2):digits;el.value=fmt;
+  if(ttV(fmt)){
+    ttTimeVals[field]=fmt;
+    if(field==="arrive"){const lv=ttTimeVals.leave||ttGetDay(ttSelDate).leave;if(lv&&ttV(lv)&&ttT2m(fmt)>=ttT2m(lv)){ttToast("⚠️ שעת כניסה חייבת להיות לפני שעת היציאה",true);setTimeout(()=>{el.value="";ttTimeVals.arrive="";el.classList.remove("set");},80);return;}el.classList.add("set");ttSaveAtt("arrive",fmt);}
+    if(field==="leave"){const av=ttTimeVals.arrive||ttGetDay(ttSelDate).arrive;if(av&&ttV(av)&&ttT2m(fmt)<=ttT2m(av)){ttToast("⚠️ שעת יציאה חייבת להיות אחרי שעת הכניסה",true);setTimeout(()=>{el.value="";ttTimeVals.leave="";},80);return;}}
+    if(field==="start"||field==="end")ttUpdateDur();
+  }else if(!fmt){
+    ttTimeVals[field]="";
+    // Clear arrive from Airtable when user deletes it
+    if(field==="arrive"){
+      const d=ttGetDay(ttSelDate);
+      if(d.attendId){
+        ttPatch(TABLES.attendance,d.attendId,{[FA.startTime]:null}).catch(()=>{});
+        d.arrive="";
+        el.classList.remove("set");
+      }
+    }
+  }
+};
+window.ttSetNow=function(field){
+  const t=ttNow();const m={arrive:"tt-arr",leave:"tt-lv",start:"tt-st",end:"tt-en"};
+  const el=document.getElementById(m[field]);if(el){el.value=t;ttOnTime(el,field);if(field==='start')ttOnStartChange();if(field==='end')ttUpdateDur();}
+  if(field==='start'||field==='end')window.ttSaveDraft&&window.ttSaveDraft();
+};
+document.addEventListener("keydown",function(e){if(["tt-arr","tt-lv","tt-st","tt-en"].includes(e.target.id)&&e.key==="Backspace"&&e.target.value.endsWith(":")){e.preventDefault();e.target.value=e.target.value.slice(0,-1);}});
+function ttUpdateDur(){
+  const s=ttTimeVals.start,en=ttTimeVals.end;const el=document.getElementById("tt-dur");if(!el)return;
+  if(s&&en&&ttV(s)&&ttV(en)){const m=ttT2m(en)-ttT2m(s);el.innerHTML=m>0?`<div class="tt-dur">⏱ ${ttFmtH(m/60)} שעות (${(m/60).toFixed(2)})</div>`:"";} else el.innerHTML="";
+}
+
+// ── STATS SIDE PANEL ──────────────────────────────────────────
+function ttRenderStats(clientId,workTypeId){
+  const el=document.getElementById("tt-stats-inline");if(!el)return;
+  if(!clientId||!workTypeId){el.innerHTML="";return;}
+  const wtName=ttWorkTypes.find(w=>w.id===workTypeId)?.fields[FW.name]||"";
+  const isMonthly=ttIsMonthlyType(wtName);
+  const months={};const today=new Date();const last6=[];
+  for(let i=5;i>=0;i--){const d=new Date(today.getFullYear(),today.getMonth()-i,1);const k=`${d.getFullYear()}-${ttPad(d.getMonth()+1)}`;months[k]=0;last6.push(k);}
+  let total=0;
+  Object.entries(ttDays).forEach(([date,day])=>{day.entries.forEach(e=>{if(e.clientId!==clientId||e.workTypeId!==workTypeId)return;const h=e.hours||Math.max(0,(ttT2m(e.end)-ttT2m(e.start))/60);total+=h;const mk=ttMonthKey(date);if(mk in months)months[mk]+=h;});});
+  const cName=ttClients.find(c=>c.id===clientId)?.fields[FC.name]||"";
+  if(isMonthly||total>0){
+    const maxVal=Math.max(...Object.values(months),0.01);
+    const bars=last6.map(k=>{const h=months[k]||0;const pct=(h/maxVal)*100;return`<div class="tt-stats-month"><div class="tt-stats-month-bar" style="height:${Math.max(pct,3)}%;background:${h>0?'rgba(59,130,246,0.7)':'rgba(255,255,255,0.1)'}"></div><span class="sm-val">${h>0?ttFmtH(h):"—"}</span><span class="sm-lbl">${ttMonthLabel(k)}</span></div>`;}).join("");
+    el.innerHTML=`<div class="tt-stats" style="margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div><div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:3px">היסטוריית שעות</div><div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.95)">📊 ${wtName} | ${cName}</div></div><div class="tt-stats-total-badge" style="font-size:15px;padding:4px 12px">${ttFmtH(total)} שע' סה"כ</div></div><div class="tt-stats-months-bars" style="height:90px">${bars}</div></div>`;
+  }else{el.innerHTML="";}
+}
+
+// ── ATTENDANCE SAVE ───────────────────────────────────────────
+async function ttSaveAtt(field,value){
+  if(!ttCurEmp||!value||!ttV(value))return;const d=ttGetDay(ttSelDate);
+  try{
+    if(d.attendId){const fm={arrive:FA.startTime,leave:FA.endTime};await ttPatch(TABLES.attendance,d.attendId,{[fm[field]]:ttISO(ttSelDate,value)});}
+    else{const f={[FA.employee]:[ttCurEmp.id],[FA.date]:ttSelDate};if(field==="arrive")f[FA.startTime]=ttISO(ttSelDate,value);else f[FA.endTime]=ttISO(ttSelDate,value);const rec=await ttPost(TABLES.attendance,f);if(!ttDays[ttSelDate])ttDays[ttSelDate]={attendId:null,arrive:"",leave:"",entries:[]};ttDays[ttSelDate].attendId=rec.id;}
+    if(!ttDays[ttSelDate])ttDays[ttSelDate]={attendId:null,arrive:"",leave:"",entries:[]};ttDays[ttSelDate][field]=value;
+  }catch(e){ttToast("שגיאה: "+e.message,true);}
+}
+// Clear arrive time on a day that has arrive but no leave (clocked-in by mistake).
+// Deletes the attendance record entirely if leave is also empty.
+window.ttClearArrive=async function(){
+  const d=ttGetDay(ttSelDate);
+  if(!d.arrive)return;
+  if(!confirm("לאפס את שעת הכניסה ליום זה? הרשומה תימחק."))return;
+  try{
+    if(d.attendId){
+      if(d.leave){await ttPatch(TABLES.attendance,d.attendId,{[FA.startTime]:null});}
+      else{await ttDel(TABLES.attendance,d.attendId);d.attendId=null;}
+    }
+    d.arrive="";ttTimeVals.arrive="";
+    ttToast("✓ שעת הכניסה אופסה");ttRenderDay();
+  }catch(e){ttToast("שגיאה: "+e.message,true);}
+};
+window.ttSaveLeave=async function(){
+  const val=ttTimeVals.leave;if(!val||!ttV(val)){ttToast("הזן שעת יציאה תקינה",true);return;}
+  const av=ttTimeVals.arrive||ttGetDay(ttSelDate).arrive;if(av&&ttV(av)&&ttT2m(val)<=ttT2m(av)){ttToast("⚠️ שעת יציאה חייבת להיות אחרי שעת הכניסה",true);return;}
+  const d=ttGetDay(ttSelDate);
+  try{
+    if(d.attendId)await ttPatch(TABLES.attendance,d.attendId,{[FA.endTime]:ttISO(ttSelDate,val)});
+    else{const f={[FA.employee]:[ttCurEmp.id],[FA.date]:ttSelDate,[FA.endTime]:ttISO(ttSelDate,val)};if(d.arrive)f[FA.startTime]=ttISO(ttSelDate,d.arrive);const rec=await ttPost(TABLES.attendance,f);if(!ttDays[ttSelDate])ttDays[ttSelDate]={attendId:null,arrive:"",leave:"",entries:[]};ttDays[ttSelDate].attendId=rec.id;}
+    if(!ttDays[ttSelDate])ttDays[ttSelDate]={attendId:null,arrive:"",leave:"",entries:[]};ttDays[ttSelDate].leave=val;
+    ttToast("✓ שעת יציאה נשמרה");ttRenderDay();
+  }catch(e){ttToast("שגיאה: "+e.message,true);}
+};
+
+// ── ADD / DELETE ENTRY ────────────────────────────────────────
+window.ttAddEntry=async function(){
+  if(ttIsDateLocked(ttSelDate)){ttToast("🔒 תאריך נעול — לא ניתן להוסיף דיווחים",true);return;}
+  const cId=document.getElementById("tt-cli")?.value;const wId=document.getElementById("tt-wt")?.value;
+  if(cId&&ttIsClientBlocked(cId)){const cName=ttClients.find(c=>c.id===cId)?.fields[FC.name]||"לקוח";ttShowClientBlocked(cName);return;}
+  const s=ttTimeVals.start,en=ttTimeVals.end;const notes=document.getElementById("tt-notes")?.value.trim()||"";const bill=document.getElementById("tt-bill")?.checked;
+  if(!cId||!wId||!ttV(s)||!ttV(en))return;
+  const m=ttT2m(en)-ttT2m(s);if(m<=0){ttToast("שעת הסיום חייבת להיות אחרי ההתחלה",true);return;}
+  const d=ttGetDay(ttSelDate);const ov=d.entries.find(e=>{return ttT2m(s)<ttT2m(e.end)&&ttT2m(en)>ttT2m(e.start);});
+  if(ov){const cn=ttClients.find(c=>c.id===ov.clientId)?.fields[FC.name]||"";ttToast(`❌ חפיפה עם "${cn}" (${ov.start}–${ov.end})`,true);return;}
+  const btn=document.getElementById("tt-addbtn");if(btn){btn.disabled=true;btn.innerHTML='<span class="tt-sp"></span> שומר...';}
+  try{
+    const rec=await ttPost(TABLES.workEntries,{[FT.employee]:[ttCurEmp.id],[FT.client]:[cId],[FT.workType]:[wId],[FT.date]:ttSelDate,[FT.startTime]:ttISO(ttSelDate,s),[FT.endTime]:ttISO(ttSelDate,en),[FT.hours]:m/60,[FT.billable]:bill,...(notes?{[FT.notes]:notes}:{})});
+    if(!ttDays[ttSelDate])ttDays[ttSelDate]={attendId:null,arrive:"",leave:"",entries:[]};
+    ttDays[ttSelDate].entries.push({id:rec.id,clientId:cId,workTypeId:wId,start:s,end:en,notes,hours:m/60});
+    ttDays[ttSelDate].entries.sort((a,b)=>a.start.localeCompare(b.start));
+    ttTimeVals.start=en;ttTimeVals.end="";ttClearDraft();ttStopTimer();ttToast("✓ דיווח נשמר");ttRenderDay();
+  }catch(e){ttToast("שגיאה: "+e.message,true);if(btn){btn.disabled=false;btn.textContent="💾 שמור דיווח";}}
+};
+window.ttDelEntry=async function(id,date){
+  if(ttIsDateLocked(date)){ttToast("🔒 תאריך נעול — לא ניתן למחוק",true);return;}
+  if(!confirm("למחוק?"))return;
+  try{await ttDel(TABLES.workEntries,id);ttDays[date].entries=ttDays[date].entries.filter(e=>e.id!==id);ttToast("נמחק");ttRenderDay();}
+  catch(e){ttToast("שגיאת מחיקה: "+e.message,true);}
+};
+window.ttChangeDay=function(dir){
+  const d=new Date(ttSelDate+"T12:00:00");d.setDate(d.getDate()+dir);
+  const next=d.toISOString().slice(0,10);if(next>ttToday())return;
+  ttSelDate=next;ttTimeVals={arrive:"",leave:"",start:"",end:""};ttStopTimer();ttRenderDay();
+};
+
+// ── MONTH PICKER ─────────────────────────────────────────────
+window.ttToggleMonthPicker=function(){
+  const dd=document.getElementById("tt-month-dropdown");
+  if(dd){dd.remove();return;}
+  const wrap=document.querySelector(".tt-month-pick");if(!wrap)return;
+  const curMK=ttMonthKey(ttSelDate);
+  const opts=ttMonthOptions();
+  const el=document.createElement("div");el.id="tt-month-dropdown";el.className="tt-month-dd";
+  el.innerHTML=opts.map(o=>`<div class="${o.k===curMK?'on':''}" onclick="ttPickMonth('${o.k}')">${o.label}</div>`).join("");
+  wrap.appendChild(el);
+  setTimeout(()=>document.addEventListener("click",ttCloseMonthPicker,{once:true}),10);
+};
+window.ttCloseMonthPicker=function(){const dd=document.getElementById("tt-month-dropdown");if(dd)dd.remove();};
+window.ttPickMonth=function(mk){
+  ttCloseMonthPicker();
+  ttSelDate=mk+"-01";ttTimeVals={arrive:"",leave:"",start:"",end:""};ttStopTimer();ttRenderDay();
+};
+
+function ttBuildGapDays(){
+  const mk=ttMonthKey(ttSelDate);const days=ttGetMonthDays(mk);const today=ttToday();const gaps=[];
+  days.forEach(ds=>{if(ds>today)return;const d=ttDays[ds];if(!d)return;
+    let dAtt=0;if(d.arrive&&d.leave&&ttV(d.arrive)&&ttV(d.leave))dAtt=Math.max(0,(ttT2m(d.leave)-ttT2m(d.arrive))/60);
+    let dWork=0;d.entries.forEach(e=>{const m=e.hours||Math.max(0,(ttT2m(e.end)-ttT2m(e.start))/60);dWork+=m;});
+    if(dAtt>0&&dWork>0){const g=dAtt-dWork;if(g>0.25)gaps.push({date:ds,gap:g});}
+  });
+  if(gaps.length===0)return"";
+  return`<div class="tt-gaps-section">
+    <div class="tt-gaps-title">⚠️ ימים עם שעות לא מוסברות (${ttMonthLabel(mk)})</div>
+    ${gaps.map(g=>`<div class="tt-gap-row" onclick="ttGoToDate('${g.date}')">
+      <span class="gap-date">${ttDLblShort(g.date)}</span>
+      <span class="gap-hrs">פער ${ttFmtH(g.gap)} שע'</span>
+    </div>`).join("")}
+  </div>`;
+}
+
+// ── EMPLOYEE DASHBOARD ────────────────────────────────────────
+function ttRenderDash(){
+  const panel=document.getElementById("tt-panel-dash");if(!panel)return;
+  const today=new Date();
+  if(!ttDashMonth)ttDashMonth=ttCurrentMonthKey();
+  function getPeriodDays(p){const days=[];if(p==="week"){const d=new Date(today);const dow=d.getDay();d.setDate(d.getDate()+(dow===0?-6:1-dow));for(let i=0;i<7;i++){const dd=new Date(d);dd.setDate(d.getDate()+i);days.push(`${dd.getFullYear()}-${ttPad(dd.getMonth()+1)}-${ttPad(dd.getDate())}`);}}else if(p==="range"){if(ttDashRangeFrom&&ttDashRangeTo&&ttDashRangeTo>=ttDashRangeFrom){const cur=new Date(ttDashRangeFrom+"T12:00:00");const end=new Date(ttDashRangeTo+"T12:00:00");while(cur<=end){days.push(`${cur.getFullYear()}-${ttPad(cur.getMonth()+1)}-${ttPad(cur.getDate())}`);cur.setDate(cur.getDate()+1);}}}else{const[y,mo]=ttDashMonth.split("-").map(Number);const dim=new Date(y,mo,0).getDate();for(let i=1;i<=dim;i++)days.push(`${y}-${ttPad(mo)}-${ttPad(i)}`);} return days;}
+  const pd=getPeriodDays(ttDashPeriod);let attH=0,workH=0,daysW=0;const byCli={},byWt={},gapDays=[];
+  pd.forEach(ds=>{const d=ttDays[ds];if(!d)return;let dAtt=0;if(d.arrive&&d.leave&&ttV(d.arrive)&&ttV(d.leave)){dAtt=Math.max(0,(ttT2m(d.leave)-ttT2m(d.arrive))/60);attH+=dAtt;if(dAtt>0)daysW++;}let dWork=0;d.entries.forEach(e=>{const m=ttT2m(e.end)-ttT2m(e.start);const h=m>0?m/60:(e.hours||0);if(h<=0)return;workH+=h;dWork+=h;byCli[e.clientId]=(byCli[e.clientId]||0)+h;byWt[e.workTypeId]=(byWt[e.workTypeId]||0)+h;});if(dAtt>0){const g=dAtt-dWork;if(g>0.25)gapDays.push({date:ds,attH:dAtt,workH:dWork,gap:g});}});
+  const cN=id=>ttClients.find(c=>c.id===id)?.fields[FC.name]||"לא ידוע";
+  const wN=id=>ttWorkTypes.find(w=>w.id===id)?.fields[FW.name]||"לא ידוע";
+  function bars(obj,nameFunc,clr){const sorted=Object.entries(obj).sort((a,b)=>b[1]-a[1]);if(!sorted.length)return`<div style="color:var(--muted);font-size:12px;text-align:center;padding:10px">אין נתונים</div>`;const max=sorted[0][1];return sorted.map(([id,h])=>`<div class="tt-bar-row"><div class="tt-bar-lbl"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%">${nameFunc(id)}</span><span>${ttFmtH(h)}</span></div><div class="tt-bar-bg"><div class="tt-bar-fill" style="width:${(h/max)*100}%;background:${clr}"></div></div></div>`).join("");}
+  const totalGap=attH-workH;
+  let expectedH=0;
+  if(ttDashPeriod==='range'){
+    const dh=ttCurEmp.fields[FE.dailyHours];
+    if(dh&&dh>0){const todayStr=ttToday();const wDays=pd.filter(ds=>{if(ds>todayStr)return false;const dow=new Date(ds+"T12:00:00").getDay();return dow>=0&&dow<=4&&!ttIsHoliday(ds);}).length;expectedH=dh*wDays;}
+  }else{const expMK=ttDashPeriod==='month'?ttDashMonth:ttCurrentMonthKey();expectedH=ttExpectedHours(ttCurEmp,expMK);}
+  const expPct=expectedH>0?Math.round((workH/expectedH)*100):0;
+  let gapHTML="";if(gapDays.length>0){const rows=gapDays.map(g=>`<tr style="cursor:pointer" onclick="ttDashGoDay('${g.date}')"><td>${ttDLbl(g.date)}</td><td style="text-align:center">${ttFmtH(g.attH)}</td><td style="text-align:center">${ttFmtH(g.workH)}</td><td style="text-align:center" class="tt-gap-val">${ttFmtH(g.gap)}</td></tr>`).join("");gapHTML=`<div class="tt-form" style="margin-top:12px"><div class="tt-ftitle">📋 ימים עם פער — לחץ לתיקון</div><table class="tt-gap-table"><thead><tr><th>תאריך</th><th style="text-align:center">נוכחות</th><th style="text-align:center">דווח</th><th style="text-align:center">פער</th></tr></thead><tbody>${rows}</tbody></table></div>`;}
+  panel.innerHTML=`<div class="tt" style="max-width:none;padding:10px 16px 32px"><div class="tt-dash-inner">
+    <div class="tt-period-btns">
+      <button class="tt-period-btn${ttDashPeriod==='week'?' on':''}" onclick="ttSetPeriod('week')">שבוע נוכחי</button>
+      <div class="tt-month-pick" style="position:relative;display:inline-block">
+        <button class="tt-period-btn${ttDashPeriod==='month'?' on':''}" onclick="event.stopPropagation();ttPickMonthClick()">${ttMonthLabel(ttDashMonth)} ▾</button>
+      </div>
+      <button class="tt-period-btn${ttDashPeriod==='range'?' on':''}" onclick="ttSetPeriod('range')">📅 טווח תאריכים</button>
+      ${ttDashPeriod==='range'?`<div class="tt-range-row">
+        <span class="tt-range-lbl">מ:</span>
+        <input type="date" class="tt-range-input" value="${ttDashRangeFrom}" onchange="ttSetRange('from',this.value)">
+        <span class="tt-range-lbl">עד:</span>
+        <input type="date" class="tt-range-input" value="${ttDashRangeTo}" onchange="ttSetRange('to',this.value)">
+      </div>`:''}
+    </div>
+    ${totalGap>0.25?`<div class="tt-alert warn">⚠️ פער של <strong style="margin:0 4px">${ttFmtH(totalGap)}</strong> שע' לא מוסברות</div>`:""}
+    ${gapHTML}
+    <div class="tt-stat-grid">
+      <div class="tt-stat"><div class="tt-stat-v">${ttFmtH(workH)}</div><div class="tt-stat-l">שעות בפועל</div></div>
+      ${expectedH>0?`<div class="tt-stat"><div class="tt-stat-v">${ttFmtH(expectedH)}</div><div class="tt-stat-l">שעות מצופות</div></div>`:''}
+      ${expectedH>0?`<div class="tt-stat"><div class="tt-stat-v" style="color:${expPct>=90?'var(--green)':expPct>=70?'var(--yellow)':'var(--red)'}">${expPct}%</div><div class="tt-stat-l">עמידה ביעד</div></div>`:`<div class="tt-stat"><div class="tt-stat-v">${ttFmtH(attH)}</div><div class="tt-stat-l">נוכחות</div></div>`}
+      <div class="tt-stat"><div class="tt-stat-v">${daysW}</div><div class="tt-stat-l">ימי עבודה</div></div>
+    </div>
+    <div class="tt-dash-cols">
+      <div class="tt-form"><div class="tt-ftitle">👥 שעות לפי לקוח</div>${bars(byCli,cN,"linear-gradient(90deg,var(--blue),var(--blue-light))")}</div>
+      <div class="tt-form"><div class="tt-ftitle">🗂 שעות לפי סוג עבודה</div>${bars(byWt,wN,"linear-gradient(90deg,var(--green),#34d399)")}</div>
+    </div>
+  </div></div>`;
+}
+window.ttSetPeriod=function(p){
+  if(p==='range'&&!ttDashRangeFrom){
+    const d=new Date();const mk=ttCurrentMonthKey();const[y,m]=mk.split("-").map(Number);
+    ttDashRangeFrom=`${y}-${ttPad(m)}-01`;ttDashRangeTo=ttToday();
+  }
+  ttDashPeriod=p;ttRenderDash();
+};
+window.ttSetRange=function(which,val){
+  if(which==='from')ttDashRangeFrom=val;else ttDashRangeTo=val;
+  if(ttDashRangeFrom&&ttDashRangeTo&&ttDashRangeTo>=ttDashRangeFrom)ttRenderDash();
+};
+// Click handler for the month button in the dashboard: opens the month dropdown.
+// If the user picks a month, ttPickDashMonth also switches the view to month mode.
+window.ttPickMonthClick=function(){window.ttToggleDashMonthPicker();};
+window.ttToggleDashMonthPicker=function(){
+  const dd=document.getElementById("tt-month-dropdown");
+  if(dd){dd.remove();return;}
+  const wrap=document.querySelector("#tt-panel-dash .tt-month-pick");if(!wrap)return;
+  const el=document.createElement("div");el.id="tt-month-dropdown";el.className="tt-month-dd";
+  el.innerHTML=ttMonthOptions().map(o=>`<div class="${o.k===ttDashMonth?'on':''}" onclick="ttPickDashMonth('${o.k}')">${o.label}</div>`).join("");
+  wrap.appendChild(el);
+  setTimeout(()=>document.addEventListener("click",()=>{const dd2=document.getElementById("tt-month-dropdown");if(dd2)dd2.remove();},{once:true}),10);
+};
+window.ttPickDashMonth=function(mk){
+  const dd=document.getElementById("tt-month-dropdown");if(dd)dd.remove();
+  ttDashMonth=mk;ttDashPeriod="month";ttRenderDash();
+};
+window.ttDashGoDay=function(ds){
+  ttSelDate=ds;ttTimeVals={arrive:"",leave:"",start:"",end:""};ttStopTimer();
+  ttActiveTab="day";ttRenderMain();
+};
+
+// ════════════════════════════════════════════════════════════
+// ══  ADMIN DASHBOARD  ══════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+async function ttOpenAdminDashboard(){
+  const ov=document.createElement("div");ov.id="tt-admin-overlay";ov.className="tt-admin-overlay";
+  ov.innerHTML=`<div class="tt-admin-box">
+    <div class="tt-admin-header">
+      <div class="tt-admin-title">🛡️ דשבורד מנהלים — בן אבי רואה חשבון</div>
+      <button class="tt-admin-close" onclick="ttCloseAdmin()">✕</button>
+    </div>
+    <div class="tt-admin-body"><div class="tt-loader"><span class="tt-sp" style="width:22px;height:22px;border-width:3px;border-top-color:#1e40af"></span><span style="color:var(--muted)">טוען נתוני עובדים...</span></div></div>
+  </div>`;
+  document.body.appendChild(ov);
+  ttAdminMonth=ttCurrentMonthKey();
+  try{
+    const ago=new Date();ago.setMonth(ago.getMonth()-3);const agoStr=ago.toISOString().slice(0,10);
+    let[emps,cls,wts,attR,wrkR]=await Promise.all([
+      ttGet(TABLES.employees,"",[FE.fullName,FE.status,FE.password,FE.hideFromTT,FE.dailyHours,FE.role]),
+      ttGet(TABLES.clients,`{${FC.name}}!=''`,[FC.name,FC.blocked]),
+      ttGet(TABLES.workTypes,"",[FW.name,FW.allowedRoles]),
+      ttGet(TABLES.attendance,`IS_AFTER({${FA.date}},'${agoStr}')`,[FA.employee,FA.date,FA.startTime,FA.endTime]),
+      ttGet(TABLES.workEntries,`IS_AFTER({${FT.date}},'${agoStr}')`,[FT.employee,FT.client,FT.workType,FT.startTime,FT.endTime,FT.hours,FT.notes,FT.billable,FT.date]),
+    ]);
+    ttAllEmpsData=emps.filter(r=>{const st=r.fields[FE.status];const active=(st&&typeof st==="object"?st.name:st)==="פעיל";return active&&!r.fields[FE.hideFromTT];}).sort((a,b)=>(a.fields[FE.fullName]||"").localeCompare(b.fields[FE.fullName]||"","he"));
+    ttClients=cls.sort((a,b)=>(a.fields[FC.name]||"").localeCompare(b.fields[FC.name]||"","he"));
+    ttWorkTypes=wts.sort((a,b)=>(a.fields[FW.name]||"").localeCompare(b.fields[FW.name]||"","he"));
+    ttAllDays={};ttAllEmpsData.forEach(e=>{ttAllDays[e.id]={};});
+    attR.forEach(r=>{const empIds=r.fields[FA.employee]||[];const date=(r.fields[FA.date]||"").slice(0,10);if(!date)return;empIds.forEach(empId=>{if(!ttAllDays[empId])return;if(!ttAllDays[empId][date])ttAllDays[empId][date]={attendId:null,arrive:"",leave:"",entries:[]};ttAllDays[empId][date].attendId=r.id;ttAllDays[empId][date].arrive=ttITime(r.fields[FA.startTime]);ttAllDays[empId][date].leave=ttITime(r.fields[FA.endTime]);});});
+    wrkR.forEach(r=>{const empIds=r.fields[FT.employee]||[];const date=r.fields[FT.date]?r.fields[FT.date].slice(0,10):r.fields[FT.startTime]?ttIDate(r.fields[FT.startTime]):null;if(!date)return;empIds.forEach(empId=>{if(!ttAllDays[empId])return;if(!ttAllDays[empId][date])ttAllDays[empId][date]={attendId:null,arrive:"",leave:"",entries:[]};const sISO=r.fields[FT.startTime],eISO=r.fields[FT.endTime];const startT=sISO?ttITime(sISO):"",endT=eISO?ttITime(eISO):"";const sm=ttT2m(startT),em=ttT2m(endT);ttAllDays[empId][date].entries.push({id:r.id,clientId:(r.fields[FT.client]||[])[0]||"",workTypeId:(r.fields[FT.workType]||[])[0]||"",start:startT,end:endT,hours:r.fields[FT.hours]||(em>sm?(em-sm)/60:0)});});});
+    Object.values(ttAllDays).forEach(em=>Object.values(em).forEach(d=>d.entries.sort((a,b)=>a.start.localeCompare(b.start))));
+    ttRenderAdminShell();
+  }catch(e){document.querySelector(".tt-admin-body").innerHTML=`<div class="tt-alert err" style="margin:16px">שגיאה: ${e.message}</div>`;}
+}
+
+window.ttCloseAdmin=function(){document.getElementById("tt-admin-overlay")?.remove();ttRenderLogin();};
+
+function ttRenderAdminShell(){
+  const ov=document.getElementById("tt-admin-overlay");if(!ov)return;
+  const monthOpts=ttMonthOptions().map(o=>`<option value="${o.k}"${o.k===ttAdminMonth?" selected":""}>${o.label}</option>`).join("");
+  ov.querySelector(".tt-admin-body").innerHTML=`
+    <div class="tt-admin-tabs">
+      <button class="tt-admin-tab${ttAdminActiveTab==='summary'?' on':''}" onclick="ttAdminTab('summary')">📊 סיכום שעות</button>
+      <button class="tt-admin-tab${ttAdminActiveTab==='attendance'?' on':''}" onclick="ttAdminTab('attendance')">🏢 נוכחות</button>
+      <button class="tt-admin-tab${ttAdminActiveTab==='details'?' on':''}" onclick="ttAdminTab('details')">📋 פירוט דיווחים</button>
+      <button class="tt-admin-tab${ttAdminActiveTab==='gaps'?' on':''}" onclick="ttAdminTab('gaps')">⚠️ פערים</button>
+      <button class="tt-admin-tab${ttAdminActiveTab==='lock'?' on':''}" onclick="ttAdminTab('lock')">🔒 נעילות</button>
+      <button class="tt-admin-tab${ttAdminActiveTab==='clients'?' on':''}" onclick="ttAdminTab('clients')">🚫 לקוחות חסומים</button>
+      <button class="tt-admin-tab${ttAdminActiveTab==='holidays'?' on':''}" onclick="ttAdminTab('holidays')">🎄 חגים</button>
+<button class="tt-admin-tab${ttAdminActiveTab==='empDash'?' on':''}" onclick="ttAdminTab('empDash')">📊 דשבורד עובדים</button>
+    </div>
+    <div class="tt-month-sel">
+      <span class="tt-month-lbl">חודש:</span>
+      <select onchange="ttAdminMonthChange(this.value)">${monthOpts}</select>
+    </div>
+    <div id="tt-admin-content"></div>`;
+  ttRenderAdminContent();
+}
+window.ttAdminTab=function(tab){
+  ttAdminActiveTab=tab;
+  document.querySelectorAll(".tt-admin-tab").forEach(b=>{
+    const map={summary:"📊",attendance:"🏢",details:"📋",gaps:"⚠️",lock:"🔒",clients:"🚫",holidays:"🎄"};
+    b.classList.toggle("on",b.textContent.trim().startsWith(map[tab]||"__"));
+  });
+  ttRenderAdminContent();
+};
+window.ttAdminMonthChange=function(val){ttAdminMonth=val;ttRenderAdminContent();};
+
+function ttExportCSV(filename,headers,rows){
+  const BOM="\uFEFF";
+  const esc=v=>{const s=String(v??"").replace(/"/g,'""');return s.includes(",")||s.includes('"')||s.includes("\n")?`"${s}"`:s;};
+  const csv=BOM+[headers.map(esc).join(","),...rows.map(r=>r.map(esc).join(","))].join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
+}
+window.ttExportTab=function(){
+  const days=ttGetMonthDays(ttAdminMonth).filter(ds=>ds<=ttToday());const ml=ttMonthLabel(ttAdminMonth);
+  switch(ttAdminActiveTab){
+    case"summary":{
+      const headers=["עובד","שעות מצופות","שעות בפועל","הפרש","נוכחות","פער","ימים","ימים אפשריים"];const possibleDays=ttPossibleWorkDays(ttAdminMonth);
+      const rows=ttAllEmpsData.map(emp=>{const ed=ttAllDays[emp.id]||{};let attH=0,workH=0,daysW=0;days.forEach(ds=>{const d=ed[ds];if(!d)return;if(d.arrive&&d.leave&&ttV(d.arrive)&&ttV(d.leave)){const h=Math.max(0,(ttT2m(d.leave)-ttT2m(d.arrive))/60);attH+=h;}let dayHasWork=false;d.entries.forEach(e=>{const m=e.hours||Math.max(0,(ttT2m(e.end)-ttT2m(e.start))/60);workH+=m;if(m>0)dayHasWork=true;});if(dayHasWork)daysW++;});const expH=ttExpectedHours(emp,ttAdminMonth);const gap=attH-workH;const diff=workH-expH;
+        return[emp.fields[FE.fullName],expH>0?ttFmtH(expH):"—",ttFmtH(workH),expH>0?ttFmtH(diff):"—",ttFmtH(attH),gap>0.1?ttFmtH(gap):"—",daysW,possibleDays];});
+      ttExportCSV(`סיכום_${ml}.csv`,headers,rows);break;}
+    case"attendance":{
+      const headers=["עובד","תאריך","יום","כניסה","יציאה","סה\"כ"];const rows=[];
+      ttAllEmpsData.forEach(emp=>{const ed=ttAllDays[emp.id]||{};const name=emp.fields[FE.fullName]||"";days.forEach(ds=>{const d=ed[ds];if(!d||(!d.arrive&&!d.leave&&d.entries.length===0))return;const h=(d.arrive&&d.leave&&ttV(d.arrive)&&ttV(d.leave))?Math.max(0,(ttT2m(d.leave)-ttT2m(d.arrive))/60):0;rows.push([name,ds,ttDLbl(ds).split(",")[0]||"",d.arrive||"",d.leave||"",h>0?ttFmtH(h):""]);});});
+      ttExportCSV(`נוכחות_${ml}.csv`,headers,rows);break;}
+    case"details":{
+      const headers=["עובד","תאריך","התחלה","סיום","משך","לקוח","סוג עבודה"];const rows=[];
+      const cN=id=>ttClients.find(c=>c.id===id)?.fields[FC.name]||"";const wN=id=>ttWorkTypes.find(w=>w.id===id)?.fields[FW.name]||"";
+      ttAllEmpsData.forEach(emp=>{const ed=ttAllDays[emp.id]||{};const name=emp.fields[FE.fullName]||"";days.forEach(ds=>{const d=ed[ds];if(!d)return;d.entries.forEach(e=>{const m=ttT2m(e.end)-ttT2m(e.start);rows.push([name,ds,e.start,e.end,m>0?ttFmtH(m/60):"",cN(e.clientId),wN(e.workTypeId)]);});});});
+      ttExportCSV(`פירוט_${ml}.csv`,headers,rows);break;}
+    case"gaps":{
+      const headers=["עובד","תאריך","נוכחות","דווח","פער"];const rows=[];
+      ttAllEmpsData.forEach(emp=>{const ed=ttAllDays[emp.id]||{};const name=emp.fields[FE.fullName]||"";days.forEach(ds=>{const d=ed[ds];if(!d)return;let dAtt=0;if(d.arrive&&d.leave&&ttV(d.arrive)&&ttV(d.leave))dAtt=Math.max(0,(ttT2m(d.leave)-ttT2m(d.arrive))/60);let dWork=0;d.entries.forEach(e=>{const m=e.hours||Math.max(0,(ttT2m(e.end)-ttT2m(e.start))/60);dWork+=m;});const g=dAtt-dWork;if(dAtt>0&&dWork>0&&g>0.25)rows.push([name,ds,ttFmtH(dAtt),ttFmtH(dWork),ttFmtH(g)]);});});
+      rows.sort((a,b)=>parseFloat(b[4])-parseFloat(a[4]));
+      ttExportCSV(`פערים_${ml}.csv`,headers,rows);break;}
+    case"holidays":{
+      const headers=["תאריך","שם החג"];const rows=ttHolidays.sort((a,b)=>a.date.localeCompare(b.date)).map(h=>[h.date,h.name]);
+      ttExportCSV("חגים.csv",headers,rows);break;}
+    default:ttToast("אין נתונים לייצוא בטאב זה",true);return;
+  }
+  ttToast("✓ קובץ Excel יוצא בהצלחה");
+};
+
+function ttRenderAdminContent(){
+  const el=document.getElementById("tt-admin-content");if(!el)return;
+  const exportTabs=["summary","attendance","details","gaps","holidays"];
+  const exportBtn=exportTabs.includes(ttAdminActiveTab)?`<div style="text-align:left;margin-bottom:10px"><button class="tt-lock-btn" onclick="ttExportTab()" style="font-size:13px">📥 ייצוא ל-Excel</button></div>`:"";
+  switch(ttAdminActiveTab){
+    case"summary":el.innerHTML=exportBtn+ttBuildSummary();break;
+    case"attendance":el.innerHTML=exportBtn+ttBuildAttendance();break;
+    case"details":el.innerHTML=exportBtn+ttBuildDetails();break;
+    case"gaps":el.innerHTML=exportBtn+ttBuildGaps();break;
+    case"lock":el.innerHTML=ttBuildLockPanel();break;
+    case"clients":el.innerHTML=ttBuildClientsPanel();break;
+    case"empDash":el.innerHTML=ttBuildEmpDashboard();break;
+    case"holidays":el.innerHTML=exportBtn+ttBuildHolidaysPanel();break;
+  }
+}
+
+// ── SUMMARY ───────────────────────────────────────────────────
+function ttPossibleWorkDays(mk){const days=ttGetMonthDays(mk);return days.filter(ds=>{const dow=new Date(ds+"T12:00:00").getDay();return dow>=0&&dow<=4&&!ttIsHoliday(ds);}).length;}
+function ttBuildSummary(){
+  const days=ttGetMonthDays(ttAdminMonth);const possibleDays=ttPossibleWorkDays(ttAdminMonth);
+  const rows=ttAllEmpsData.map(emp=>{
+    const ed=ttAllDays[emp.id]||{};const name=emp.fields[FE.fullName]||"";let attH=0,workH=0,daysW=0;
+    days.forEach(ds=>{const d=ed[ds];if(!d)return;let dayHasWork=false;if(d.arrive&&d.leave&&ttV(d.arrive)&&ttV(d.leave)){const h=Math.max(0,(ttT2m(d.leave)-ttT2m(d.arrive))/60);attH+=h;}d.entries.forEach(e=>{const m=e.hours||Math.max(0,(ttT2m(e.end)-ttT2m(e.start))/60);workH+=m;if(m>0)dayHasWork=true;});if(dayHasWork)daysW++;});
+    const gap=attH-workH;const expH=ttExpectedHours(emp,ttAdminMonth);const diff=workH-expH;const expPct=expH>0?Math.round((workH/expH)*100):0;
+    const badge=expH>0?(expPct>=90?`<span class="tt-badge ok">${expPct}%</span>`:expPct>=70?`<span class="tt-badge warn">${expPct}%</span>`:`<span class="tt-badge bad">${expPct}%</span>`):(gap>2?`<span class="tt-badge bad">${ttFmtH(gap)} פער</span>`:gap>0.5?`<span class="tt-badge warn">${ttFmtH(gap)} פער</span>`:`<span class="tt-badge ok">מאוזן</span>`);
+    return`<tr><td><div class="tt-emp-name">${name}</div></td><td><div class="tt-emp-h">${expH>0?ttFmtH(expH):'—'}</div></td><td><div class="tt-emp-h">${ttFmtH(workH)}</div></td><td style="color:${diff>=0?'var(--green)':'var(--red)'};font-weight:700">${expH>0?(diff>=0?'+':'')+ttFmtH(diff):'—'}</td><td><div class="tt-emp-h">${ttFmtH(attH)}</div></td><td class="${gap>2?'tt-emp-gap big':gap>0.5?'tt-emp-gap':''}">${gap>0.1?ttFmtH(gap):"—"}</td><td>${daysW}</td><td>${possibleDays}</td><td>${badge}</td></tr>`;
+  }).join("");
+  const tAtt=ttAllEmpsData.reduce((s,e)=>{const ed=ttAllDays[e.id]||{};let h=0;days.forEach(ds=>{const d=ed[ds];if(d&&d.arrive&&d.leave&&ttV(d.arrive)&&ttV(d.leave))h+=Math.max(0,(ttT2m(d.leave)-ttT2m(d.arrive))/60);});return s+h;},0);
+  const tWork=ttAllEmpsData.reduce((s,e)=>{const ed=ttAllDays[e.id]||{};let h=0;days.forEach(ds=>{const d=ed[ds];if(d)d.entries.forEach(en=>{const m=en.hours||Math.max(0,(ttT2m(en.end)-ttT2m(en.start))/60);h+=m;});});return s+h;},0);
+  const tExp=ttAllEmpsData.reduce((s,e)=>s+ttExpectedHours(e,ttAdminMonth),0);const tDiff=tWork-tExp;
+  return`<div class="tt-stat-grid" style="margin-bottom:14px"><div class="tt-stat"><div class="tt-stat-v">${ttAllEmpsData.length}</div><div class="tt-stat-l">עובדים</div></div><div class="tt-stat"><div class="tt-stat-v">${ttFmtH(tExp)}</div><div class="tt-stat-l">שעות מצופות</div></div><div class="tt-stat"><div class="tt-stat-v">${ttFmtH(tWork)}</div><div class="tt-stat-l">שעות בפועל</div></div><div class="tt-stat"><div class="tt-stat-v">${ttFmtH(tAtt)}</div><div class="tt-stat-l">נוכחות</div></div></div>
+  <div style="overflow-x:auto"><table class="tt-emp-table"><thead><tr><th>עובד</th><th>שעות מצופות</th><th>שעות בפועל</th><th>הפרש</th><th>נוכחות</th><th>פער</th><th>ימים</th><th>ימים אפשריים</th><th>סטטוס</th></tr></thead><tbody>${rows||'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">אין נתונים לחודש זה</td></tr>'}</tbody></table></div>`;
+}
+
+// ── ATTENDANCE ────────────────────────────────────────────────
+function ttBuildAttendance(){
+  const days=ttGetMonthDays(ttAdminMonth).filter(ds=>ds<=ttToday());
+  return ttAllEmpsData.map(emp=>{
+    const name=emp.fields[FE.fullName]||"";const ed=ttAllDays[emp.id]||{};
+    const wd=days.filter(ds=>{const d=ed[ds];return d&&(d.arrive||d.entries.length>0);});if(!wd.length)return"";
+    const rows=wd.map(ds=>{const d=ed[ds];const ah=(d.arrive&&d.leave&&ttV(d.arrive)&&ttV(d.leave))?ttFmtH(Math.max(0,(ttT2m(d.leave)-ttT2m(d.arrive))/60)):"";const dn=["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"][new Date(ds+"T12:00:00").getDay()];return`<tr><td style="padding-right:24px">${ttDLblShort(ds)} ${dn}</td><td class="tt-time-cell">${d.arrive||'<span class="tt-missing">לא הוזן</span>'}</td><td class="tt-time-cell">${d.leave||'<span class="tt-missing">לא הוזן</span>'}</td><td style="font-weight:700;color:var(--blue)">${ah}</td></tr>`;}).join("");
+    return`<div class="tt-admin-sec"><div class="tt-admin-sec-title">👤 ${name} — ${wd.length} ימים</div><div style="overflow-x:auto"><table class="tt-att-table"><thead><tr><th>תאריך</th><th>כניסה</th><th>יציאה</th><th>סה"כ</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }).join("")||`<div class="tt-empty" style="margin-top:20px">אין נתוני נוכחות לחודש זה</div>`;
+}
+
+// ── DETAILS ───────────────────────────────────────────────────
+function ttBuildDetails(){
+  const days=ttGetMonthDays(ttAdminMonth);const cN=id=>ttClients.find(c=>c.id===id)?.fields[FC.name]||"לא ידוע";const wN=id=>ttWorkTypes.find(w=>w.id===id)?.fields[FW.name]||"לא ידוע";
+  return ttAllEmpsData.map(emp=>{
+    const name=emp.fields[FE.fullName]||"";const ed=ttAllDays[emp.id]||{};const byCli={};let total=0;const allE=[];
+    days.forEach(ds=>{const d=ed[ds];if(!d)return;d.entries.forEach(e=>{const h=e.hours||Math.max(0,(ttT2m(e.end)-ttT2m(e.start))/60);total+=h;byCli[e.clientId]=(byCli[e.clientId]||0)+h;allE.push({ds,...e});});});
+    if(!allE.length)return"";
+    const cliRows=Object.entries(byCli).sort((a,b)=>b[1]-a[1]).map(([id,h])=>`<div class="tt-bar-row"><div class="tt-bar-lbl"><span>${cN(id)}</span><span>${ttFmtH(h)}</span></div><div class="tt-bar-bg"><div class="tt-bar-fill" style="width:${(h/total)*100}%;background:linear-gradient(90deg,var(--blue),var(--blue-light))"></div></div></div>`).join("");
+    const entRows=allE.map(e=>`<tr><td>${ttDLblShort(e.ds)}</td><td>${e.start}–${e.end}</td><td>${ttFmtH(e.hours)}</td><td>${cN(e.clientId)}</td><td>${wN(e.workTypeId)}</td></tr>`).join("");
+    return`<div class="tt-admin-sec"><div class="tt-admin-sec-title">👤 ${name} — ${ttFmtH(total)} שעות</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px"><div>${cliRows}</div><div style="overflow:auto;max-height:200px"><table class="tt-att-table" style="font-size:11px"><thead><tr><th>תאריך</th><th>שעות</th><th>משך</th><th>לקוח</th><th>סוג</th></tr></thead><tbody>${entRows}</tbody></table></div></div></div>`;
+  }).join("")||`<div class="tt-empty" style="margin-top:20px">אין דיווחים לחודש זה</div>`;
+}
+
+// ── GAPS ──────────────────────────────────────────────────────
+function ttBuildGaps(){
+  const days=ttGetMonthDays(ttAdminMonth).filter(ds=>ds<=ttToday());let allGaps=[];
+  ttAllEmpsData.forEach(emp=>{const name=emp.fields[FE.fullName]||"";const ed=ttAllDays[emp.id]||{};days.forEach(ds=>{const d=ed[ds];if(!d||!d.arrive)return;const ah=(d.arrive&&d.leave&&ttV(d.arrive)&&ttV(d.leave))?Math.max(0,(ttT2m(d.leave)-ttT2m(d.arrive))/60):0;const wh=d.entries.reduce((s,e)=>{const m=ttT2m(e.end)-ttT2m(e.start);return s+(m>0?m/60:0);},0);const gap=ah-wh;if(gap>0.25)allGaps.push({name,ds,attH:ah,workH:wh,gap});});});
+  allGaps.sort((a,b)=>b.gap-a.gap);
+  if(!allGaps.length)return`<div class="tt-alert ok" style="margin-top:10px">✓ אין פערים לחודש זה!</div>`;
+  const tGap=allGaps.reduce((s,g)=>s+g.gap,0);
+  const rows=allGaps.map(g=>`<tr class="${g.gap>2?'gap-row':''}"><td class="tt-emp-name">${g.name}</td><td>${ttDLblShort(g.ds)}</td><td style="text-align:center">${ttFmtH(g.attH)}</td><td style="text-align:center">${ttFmtH(g.workH)}</td><td style="text-align:center" class="${g.gap>2?'tt-emp-gap big':'tt-emp-gap'}">${ttFmtH(g.gap)}</td></tr>`).join("");
+  return`<div class="tt-alert warn" style="margin-bottom:12px">⚠️ ${allGaps.length} ימים עם פערים | סה"כ: <strong>${ttFmtH(tGap)}</strong> שעות</div><div style="overflow-x:auto"><table class="tt-emp-table"><thead><tr><th>עובד</th><th>תאריך</th><th style="text-align:center">נוכחות</th><th style="text-align:center">דווח</th><th style="text-align:center">פער</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+// ── LOCK PANEL ────────────────────────────────────────────────
+function ttBuildLockPanel(){
+  const ls=ttGetLockState();
+  const monthOpts=ttMonthOptions().map(o=>`<option value="${o.k}">${o.label}</option>`).join("");
+  const lockedMonths=(ls.lockedMonths||[]).map(mk=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span class="tt-lock-status active" style="margin:0">${ttMonthLabel(mk)} 🔒</span><button class="tt-lock-btn danger" onclick="ttUnlockMonth('${mk}')">שחרר</button></div>`).join("")||`<div style="color:var(--muted);font-size:12px">אין חודשים נעולים</div>`;
+  return`<div class="tt-admin-sec"><div class="tt-admin-sec-title">📅 נעילת תאריך קצר</div>
+    <div class="tt-lock-row"><label style="font-size:13px;font-weight:600">נעול לפני:</label><input type="date" class="tt-lock-input" id="tt-cutoff-input" value="${ls.cutoffDate||''}" max="${ttToday()}"/><button class="tt-lock-btn" onclick="ttSetCutoff()">קבע נעילה</button>${ls.cutoffDate?`<button class="tt-lock-btn danger" onclick="ttClearCutoff()">הסר</button>`:""}</div>
+    ${ls.cutoffDate?`<div class="tt-lock-status active">🔒 נעול לפני ${ls.cutoffDate}</div>`:`<div class="tt-lock-status inactive">✓ אין נעילת תאריך קצר</div>`}
+  </div>
+  <div class="tt-admin-sec"><div class="tt-admin-sec-title">📆 נעילת חודש שלם</div>
+    <div class="tt-lock-row"><select class="tt-lock-input" id="tt-lock-month-sel" style="direction:rtl">${monthOpts}</select><button class="tt-lock-btn" onclick="ttLockMonth()">נעל חודש</button></div>
+    <div style="margin-top:10px">${lockedMonths}</div>
+  </div>`;
+}
+window.ttSetCutoff=function(){const val=document.getElementById("tt-cutoff-input")?.value;if(!val)return;const ls=ttGetLockState();ls.cutoffDate=val;ttSetLockState(ls);ttToast(`✓ נעילה הוגדרה לפני ${val}`);ttRenderAdminContent();};
+window.ttClearCutoff=function(){const ls=ttGetLockState();delete ls.cutoffDate;ttSetLockState(ls);ttToast("✓ נעילת תאריך הוסרה");ttRenderAdminContent();};
+window.ttLockMonth=function(){const mk=document.getElementById("tt-lock-month-sel")?.value;if(!mk)return;const ls=ttGetLockState();if(!ls.lockedMonths)ls.lockedMonths=[];if(!ls.lockedMonths.includes(mk))ls.lockedMonths.push(mk);ttSetLockState(ls);ttToast(`✓ חודש ${ttMonthLabel(mk)} נעול`);ttRenderAdminContent();};
+window.ttUnlockMonth=function(mk){const ls=ttGetLockState();ls.lockedMonths=(ls.lockedMonths||[]).filter(m=>m!==mk);ttSetLockState(ls);ttToast(`✓ חודש ${ttMonthLabel(mk)} שוחרר`);ttRenderAdminContent();};
+
+// ── CLIENTS PANEL ─────────────────────────────────────────────
+function ttBuildClientsPanel(){
+  const ls=ttGetLockState();const blocked=ls.blockedClients||{};
+  const rows=ttClients.map(c=>{const name=c.fields[FC.name]||"";const airtableBlocked=!!c.fields[FC.blocked];const localBlocked=!!blocked[c.id];const isBlocked=airtableBlocked||localBlocked;
+    return`<tr><td class="tt-emp-name">${name}</td><td>${airtableBlocked?'<span class="tt-cli-blocked">🔒 Airtable</span>':'<span class="tt-cli-ok">✓</span>'}</td><td><label class="tt-toggle"><input type="checkbox" ${localBlocked?"checked":""} onchange="ttToggleClient('${c.id}',this.checked)"/><span class="tt-toggle-slider"></span></label></td><td>${isBlocked?'<span class="tt-cli-blocked">🚫 חסום</span>':'<span class="tt-cli-ok">✓ פתוח</span>'}</td></tr>`;
+  }).join("");
+  return`<div class="tt-alert info" style="margin-bottom:12px">💡 Toggle = חסימה ידנית (דפדפן). עמודת "חסום" ב-Airtable = חסימה קבועה לכל המכשירים.</div>
+  <div style="overflow-x:auto"><table class="tt-cli-table"><thead><tr><th>שם לקוח</th><th>Airtable</th><th>חסימה ידנית</th><th>סטטוס</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+window.ttToggleClient=function(id,blocked){const ls=ttGetLockState();if(!ls.blockedClients)ls.blockedClients={};if(blocked){ls.blockedClients[id]=true;}else{delete ls.blockedClients[id];}ttSetLockState(ls);ttToast(blocked?"🚫 לקוח נחסם":"✓ חסימה הוסרה");};
+
+// ── HOLIDAYS PANEL ───────────────────────────────────────────
+let ttEmpDashFilter=[];
+window.ttToggleEmpFilter=function(empId){const idx=ttEmpDashFilter.indexOf(empId);if(idx>=0)ttEmpDashFilter.splice(idx,1);else ttEmpDashFilter.push(empId);ttRenderAdminContent();};
+window.ttEmpFilterAll=function(){ttEmpDashFilter=[];ttRenderAdminContent();};
+function ttBuildEmpDashboard(){
+  const days=ttGetMonthDays(ttAdminMonth);
+  const cN=id=>ttClients.find(c=>c.id===id)?.fields[FC.name]||"ללא לקוח";
+  const filteredEmps=ttEmpDashFilter.length?ttAllEmpsData.filter(e=>ttEmpDashFilter.includes(e.id)):ttAllEmpsData;
+  let filterHtml='<div style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;"><span style="color:#94a3b8;font-size:12px;margin-left:6px;">סנן עובדים:</span>';
+  filterHtml+='<button onclick="ttEmpFilterAll()" style="padding:3px 10px;border-radius:15px;border:1px solid '+(ttEmpDashFilter.length===0?'#3b82f6':'#1a2f45')+';background:'+(ttEmpDashFilter.length===0?'#1e40af':'transparent')+';color:'+(ttEmpDashFilter.length===0?'#fff':'#94a3b8')+';font-size:11px;cursor:pointer;font-family:inherit;">הכל</button>';
+  ttAllEmpsData.forEach(emp=>{const sel=ttEmpDashFilter.includes(emp.id);filterHtml+='<button onclick="ttToggleEmpFilter(\''+emp.id+'\')" style="padding:3px 10px;border-radius:15px;border:1px solid '+(sel?'#3b82f6':'#1a2f45')+';background:'+(sel?'#1e40af':'transparent')+';color:'+(sel?'#fff':'#94a3b8')+';font-size:11px;cursor:pointer;font-family:inherit;">'+(emp.fields[FE.fullName]||"")+'</button>';});
+  filterHtml+='</div>';
+  let html=filterHtml+'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;padding:0;">';
+  filteredEmps.forEach(emp=>{
+    const ed=ttAllDays[emp.id]||{};const name=emp.fields[FE.fullName]||"";
+    let attH=0,workH=0,daysW=0;const clientMap={};
+    days.forEach(ds=>{const d=ed[ds];if(!d)return;let dayHasWork=false;
+      if(d.arrive&&d.leave&&ttV(d.arrive)&&ttV(d.leave)){const h=Math.max(0,(ttT2m(d.leave)-ttT2m(d.arrive))/60);attH+=h;}
+      d.entries.forEach(e=>{const m=e.hours||Math.max(0,(ttT2m(e.end)-ttT2m(e.start))/60);workH+=m;if(m>0)dayHasWork=true;
+        const cn=cN(e.clientId);clientMap[cn]=(clientMap[cn]||0)+m;});
+      if(dayHasWork)daysW++;
+    });
+    const expH=ttExpectedHours(emp,ttAdminMonth);
+    const pct=expH>0?Math.round((workH/expH)*100):0;
+    const pctClass=pct>=90?"ok":pct>=70?"warn":"low";
+    const topClients=Object.entries(clientMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const maxCH=topClients.length?topClients[0][1]:1;
+    html+='<div style="background:#111e2d;border:1px solid #1a2f45;border-radius:10px;padding:16px;">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">';
+    html+='<h3 style="margin:0;color:#e2e8f0;font-size:16px;">'+name+'</h3>';
+    html+='<span class="tt-badge '+pctClass+'">'+pct+'%</span></div>';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">';
+    html+='<div style="background:#0d1520;padding:8px;border-radius:6px;text-align:center;"><div style="color:#94a3b8;font-size:11px;">שעות עבודה</div><div style="color:#38bdf8;font-size:18px;font-weight:bold;">'+ttFmtH(workH)+'</div></div>';
+    html+='<div style="background:#0d1520;padding:8px;border-radius:6px;text-align:center;"><div style="color:#94a3b8;font-size:11px;">נוכחות</div><div style="color:#a78bfa;font-size:18px;font-weight:bold;">'+ttFmtH(attH)+'</div></div>';
+    html+='<div style="background:#0d1520;padding:8px;border-radius:6px;text-align:center;"><div style="color:#94a3b8;font-size:11px;">צפוי</div><div style="color:#94a3b8;font-size:18px;font-weight:bold;">'+ttFmtH(expH)+'</div></div>';
+    html+='<div style="background:#0d1520;padding:8px;border-radius:6px;text-align:center;"><div style="color:#94a3b8;font-size:11px;">ימים</div><div style="color:#94a3b8;font-size:18px;font-weight:bold;">'+daysW+'</div></div>';
+    html+='</div>';
+    if(topClients.length){
+      html+='<div style="margin-bottom:10px;"><div style="color:#94a3b8;font-size:11px;margin-bottom:6px;">לקוחות מובילים</div>';
+      topClients.forEach(([cn,ch])=>{
+        const w=Math.round((ch/maxCH)*100);
+        html+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">';
+        html+='<div style="width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#cbd5e1;font-size:11px;text-align:right;">'+cn+'</div>';
+        html+='<div style="flex:1;background:#1e293b;border-radius:3px;height:14px;"><div style="width:'+w+'%;background:#38bdf8;height:100%;border-radius:3px;"></div></div>';
+        html+='<div style="color:#94a3b8;font-size:10px;width:35px;">'+ttFmtH(ch)+'</div></div>';
+      });
+      html+='</div>';
+    }
+    const last7=days.slice(-7).reverse();
+    if(last7.length){
+      html+='<div style="color:#94a3b8;font-size:11px;margin-bottom:4px;">7 ימים אחרונים</div>';
+      html+='<table style="width:100%;font-size:11px;border-collapse:collapse;"><tr style="color:#64748b;"><th style="text-align:right;padding:2px;">תאריך</th><th style="text-align:center;padding:2px;">נוכחות</th><th style="text-align:center;padding:2px;">עבודה</th></tr>';
+      last7.forEach(ds=>{
+        const d=ed[ds];
+        const dd=ds.split("-");const dLabel=dd[2]+"/"+dd[1];
+        let aH=0,wH=0;
+        if(d){
+          if(d.arrive&&d.leave&&ttV(d.arrive)&&ttV(d.leave))aH=Math.max(0,(ttT2m(d.leave)-ttT2m(d.arrive))/60);
+          d.entries.forEach(e=>{wH+=e.hours||Math.max(0,(ttT2m(e.end)-ttT2m(e.start))/60);});
+        }
+        const rowColor=wH>0?"#e2e8f0":"#475569";
+        html+='<tr style="color:'+rowColor+';border-top:1px solid #1a2f45;"><td style="text-align:right;padding:2px;">'+dLabel+'</td><td style="text-align:center;padding:2px;">'+(aH>0?ttFmtH(aH):"-")+'</td><td style="text-align:center;padding:2px;">'+(wH>0?ttFmtH(wH):"-")+'</td></tr>';
+      });
+      html+='</table>';
+    }
+    html+='</div>';
+  });
+  html+='</div>';
+  return html;
+}
+
+    function ttBuildHolidaysPanel(){
+  const sorted=[...ttHolidays].sort((a,b)=>a.date.localeCompare(b.date));
+  const rows=sorted.map(h=>`<tr><td>${ttDLbl(h.date)}</td><td>${h.name}</td><td><button class="tt-xbtn" style="color:var(--red);border-color:var(--red)" onclick="ttDelHoliday('${h.id}')">✕ מחק</button></td></tr>`).join("");
+  return`<div class="tt-form" style="margin-bottom:14px">
+    <div class="tt-ftitle">➕ הוסף יום חג</div>
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+      <div><label class="tt-fl">תאריך</label><input type="date" id="tt-hol-date" class="tt-fi" style="direction:ltr"/></div>
+      <div style="flex:1;min-width:120px"><label class="tt-fl">שם החג</label><input type="text" id="tt-hol-name" class="tt-fi" placeholder="לדוגמה: ראש השנה" autocomplete="off"/></div>
+      <button class="tt-add" style="width:auto;padding:8px 20px" onclick="ttAddHoliday()">הוסף</button>
+    </div>
+  </div>
+  <div class="tt-alert info" style="margin-bottom:12px">💡 ימי חג לא נספרים כימי עבודה בחישוב שעות מצופות (ראשון–חמישי בלבד)</div>
+  ${rows?`<div style="overflow-x:auto"><table class="tt-emp-table"><thead><tr><th>תאריך</th><th>שם החג</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="tt-empty" style="margin-top:10px">אין ימי חג מוגדרים</div>'}`;
+}
+window.ttAddHoliday=async function(){
+  const dateEl=document.getElementById("tt-hol-date");const nameEl=document.getElementById("tt-hol-name");
+  const d=dateEl?.value;const n=nameEl?.value?.trim();
+  if(!d){ttToast("יש לבחור תאריך",true);return;}
+  if(!n){ttToast("יש להזין שם חג",true);return;}
+  if(ttHolidays.some(h=>h.date===d)){ttToast("תאריך זה כבר מוגדר כחג",true);return;}
+  try{
+    const rec=await ttPost(TABLES.holidays,{[FH.date]:d,[FH.name]:n});
+    ttHolidays.push({id:rec.id,date:d,name:n});
+    ttToast("✓ חג נוסף");ttRenderAdminContent();
+  }catch(e){ttToast("שגיאה: "+e.message,true);}
+};
+window.ttDelHoliday=async function(id){
+  if(!confirm("למחוק חג זה?"))return;
+  try{
+    await ttDel(TABLES.holidays,id);
+    ttHolidays=ttHolidays.filter(h=>h.id!==id);
+    ttToast("✓ חג נמחק");ttRenderAdminContent();
+  }catch(e){ttToast("שגיאה: "+e.message,true);}
+};
+
+// ── BOOT ──────────────────────────────────────────────────────
+ttLoadEmps();
+
+})();
+</script>
+</body>
+</html>
