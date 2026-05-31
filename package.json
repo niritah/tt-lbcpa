@@ -1,6 +1,6 @@
 {
   "name": "tt-lbcpa",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "דיווח שעות - לירן בן אבי רו\"ח",
   "main": "main.js",
   "author": "Liran Ben Avi CPA",
@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "electron": "^31.7.7",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^24.13.3"
   },
   "build": {
     "appId": "co.il.lbcpa.tt",
@@ -23,7 +23,12 @@
     "copyright": "© 2025 Liran Ben Avi CPA",
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "icon.ico"
     },
@@ -47,7 +52,7 @@
       "provider": "github",
       "owner": "niritah",
       "repo": "tt-lbcpa",
-      "private": true,
+      "private": false,
       "releaseType": "release"
     }
   }
