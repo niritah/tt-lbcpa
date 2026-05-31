@@ -611,6 +611,7 @@ async function ttGet(table,filter,fieldIds){
         resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'get',table,filter:filter||'',fields:fieldIds||[],offset})});
         if(resp.ok)break;
         if(resp.status>=500||resp.status===429){lastErr=new Error('Airtable error '+resp.status);await new Promise(r=>setTimeout(r,400*(attempt+1)));continue;}
+        if(resp.status===401){ttHandleExpiredSession();return[];}
         throw new Error('Airtable error '+resp.status);
       }catch(e){lastErr=e;if(attempt<2){await new Promise(r=>setTimeout(r,400*(attempt+1)));continue;}throw e;}
     }
@@ -685,8 +686,16 @@ async function ttLoadEmps(){
     ttRenderLogin();
   }catch(e){
     const splash=document.getElementById("tt-splash");if(splash)splash.remove();
+    if(e.message&&e.message.includes('401')){ttRenderLogin();return;}
     ttRoot().innerHTML=`<div class="tt-loader" style="color:#fca5a5">שגיאה: ${e.message}</div>`;
   }
+}
+
+// ── SESSION EXPIRY HANDLER ────────────────────────────────────
+function ttHandleExpiredSession(){
+  // Clear all auth state and return to login screen
+  ['lbcpa_auth','lbcpa_token','lbcpa_device_token','lbcpa_auth_expires','lbcpa_name','lbcpa_user'].forEach(k=>localStorage.removeItem(k));
+  ttRenderLogin();
 }
 
 // ── OTP LOGIN (Electron desktop) ───────────────────────────────
