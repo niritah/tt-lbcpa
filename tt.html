@@ -770,9 +770,6 @@ function ttRenderLogin(){
         </div>
         <button class="tt-lbtn" id="tt-otp-submit" onclick="ttSubmitCreds()">כניסה ←</button>
       </div>
-      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
-        <button class="tt-lbtn" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);margin-top:0" onclick="ttOpenAdminLogin()">🔐 כניסת מנהל</button>
-      </div>
     </div>
   </div>`;
   setTimeout(()=>{
@@ -948,11 +945,13 @@ function ttRenderMain(){
   const name=ttCurEmp.fields[FE.fullName]||"";
   const adminBtn=ttIsManager()?`<button class="tt-xbtn" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;padding:4px 10px;font-size:11px" onclick="ttOpenAdminDashboard()">🔐 מנהל</button>`:"";
   const settingsBtn=`<button class="tt-xbtn" title="הגדרות תזכורות" style="padding:4px 8px;font-size:14px" onclick="ttOpenSettings()">⚙️</button>`;
+  const exportBtn=`<button class="tt-xbtn" title="ייצוא דוחות Excel" style="padding:4px 9px;font-size:13px;background:linear-gradient(135deg,#166534,#16a34a);color:#fff;border:none" onclick="ttExportPersonalXLSX('${ttDashMonth||ttCurrentMonthKey()}')">📤</button>`;
   ttRoot().innerHTML=`
   <div class="tt-bar">
     <div class="tt-bar-title">⏱ דיווח שעות</div>
     <div class="tt-bar-r">
       ${settingsBtn}
+      ${exportBtn}
       ${adminBtn}
       <div style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="ttLogout()">
         <div class="tt-av">${name[0]||"?"}</div>
@@ -1439,7 +1438,7 @@ window.ttDashGoDay=function(ds){
 // ════════════════════════════════════════════════════════════
 // ══  ADMIN DASHBOARD  ══════════════════════════════════════
 // ════════════════════════════════════════════════════════════
-async function ttOpenAdminDashboard(){
+window.ttOpenAdminDashboard=async function(){
   const ov=document.createElement("div");ov.id="tt-admin-overlay";ov.className="tt-admin-overlay";
   ov.innerHTML=`<div class="tt-admin-box">
     <div class="tt-admin-header">
